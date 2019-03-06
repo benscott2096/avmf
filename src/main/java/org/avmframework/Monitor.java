@@ -1,6 +1,10 @@
 package org.avmframework;
 
 import org.avmframework.objective.ObjectiveValue;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * A Monitor instance is used by an AVM object to keep track of the candidate solution with the best objective value,
@@ -53,6 +57,9 @@ public class Monitor {
      */
     protected long endTime;
 
+    protected BufferedWriter fileWriter;
+
+
     /**
      * Constructs a Monitor instance.
      * @param tp The termination policy being used by the search.
@@ -65,6 +72,14 @@ public class Monitor {
         numUniqueEvaluations = 0;
         numRestarts = 0;
         startTime = System.currentTimeMillis();
+
+        try {
+            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.txt"));
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -135,15 +150,53 @@ public class Monitor {
         numUniqueEvaluations ++;
 
         tp.checkFoundOptimal(this);
+
+        // handle writing variables and objective values to file here -- BSS
+    }
+
+
+    public void testOutput(Vector vector, ObjectiveValue objVal) throws TerminationException {
+        System.out.println("vector: " + vector + ", objVal: " + objVal);
+        try {
+            fileWriter.write(vector + "," + objVal);
+            fileWriter.write(System.lineSeparator());
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        // handle writing variables and objective values to file here -- BSS
     }
 
     public void observeRestart() throws TerminationException {
         tp.checkExhaustedRestarts(this);
         tp.checkExhaustedTime(this);
         numRestarts ++;
+        System.out.println("restart");
+        // handle writing restarts to file here -BSS
     }
 
     public void observeTermination() {
         endTime = System.currentTimeMillis();
+        try {
+//            fileWriter.write(getBestVector().toString());
+//            fileWriter.write(System.lineSeparator());
+////
+//            fileWriter.write(getBestObjVal().toString());
+//            fileWriter.write(System.lineSeparator());
+//
+//            fileWriter.write(getNumEvaluations());
+//            fileWriter.write(System.lineSeparator());
+//
+//            fileWriter.write(getNumUniqueEvaluations());
+//            fileWriter.write(System.lineSeparator());
+//
+////            fileWriter.write((int)getRunningTime());
+////            fileWriter.write(System.lineSeparator());
+
+            fileWriter.close();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
     }
 }

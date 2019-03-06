@@ -61,6 +61,8 @@ public class AllZeros {
         // set up the termination policy
         TerminationPolicy terminationPolicy = TerminationPolicy.createMaxEvaluationsTerminationPolicy(MAX_EVALUATIONS);
 
+//        TerminationPolicy terminationPolicy = new TerminationPolicy(false, 10000, 5, 10000000); // test alternate policy
+
         // set up random initialization of vectors
         RandomGenerator randomGenerator = new MersenneTwister();
         Initializer initializer = new RandomInitializer(randomGenerator);
