@@ -6,6 +6,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.avmframework.visualiser.AvmfIterationOutput;
+import org.avmframework.visualiser.AvmfRunLog;
+
 /**
  * A Monitor instance is used by an AVM object to keep track of the candidate solution with the best objective value,
  * the number of objective function evaluations that have taken place, and other information. It is also responsible
@@ -60,6 +66,8 @@ public class Monitor {
     protected BufferedWriter fileWriter;
 
 
+
+
     /**
      * Constructs a Monitor instance.
      * @param tp The termination policy being used by the search.
@@ -74,7 +82,7 @@ public class Monitor {
         startTime = System.currentTimeMillis();
 
         try {
-            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.txt"));
+            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.json"));
         }
         catch (IOException e){
             e.printStackTrace();
@@ -155,11 +163,17 @@ public class Monitor {
     }
 
 
+    protected AvmfRunLog runLog = new AvmfRunLog();
+
+
     public void testOutput(Vector vector, ObjectiveValue objVal) throws TerminationException {
         System.out.println("vector: " + vector + ", objVal: " + objVal);
         try {
             fileWriter.write(vector + "," + objVal);
             fileWriter.write(System.lineSeparator());
+
+
+            runLog.addIteration(new AvmfIterationOutput(vector, objVal));
         }
         catch (IOException e){
             e.printStackTrace();
@@ -189,11 +203,19 @@ public class Monitor {
 //
 //            fileWriter.write(getNumUniqueEvaluations());
 //            fileWriter.write(System.lineSeparator());
-//
-////            fileWriter.write((int)getRunningTime());
-////            fileWriter.write(System.lineSeparator());
+
+//            fileWriter.write((int)getRunningTime());
+//            fileWriter.write(System.lineSeparator());
 
             fileWriter.close();
+
+            GsonBuilder builder = new GsonBuilder();
+            Gson gson = builder.create();
+            FileWriter writer = new FileWriter("testingjson.json");
+//            AvmfRunLog plot = new AvmfRunLog(getBestVector());
+//            System.out.println(getBestVector());
+            writer.write(gson.toJson(runLog));
+            writer.close();
         }
         catch (IOException e){
             e.printStackTrace();
