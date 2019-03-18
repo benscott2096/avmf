@@ -29,7 +29,14 @@ public abstract class ObjectiveFunction {
         // If vector seen before, return previously calculated objective value
         if (useCache && previousVals.containsKey(vector)) {
 //            System.out.println("repeat!!!");
-            monitor.testOutput(vector, previousVals.get(vector)); // added -BSS
+
+            // only record key pair if record data is turned on
+            if (monitor.getUseVisualiser()){
+                monitor.recordKeyPair(vector, previousVals.get(vector)); // added -BSS
+            }
+
+
+
             return previousVals.get(vector); // returns objective value
         }
 
@@ -47,7 +54,12 @@ public abstract class ObjectiveFunction {
 
         if (monitor != null) {
             monitor.observePreviouslyUnseenVector(vector, objVal);
-            monitor.testOutput(vector, objVal); // added -BSS
+
+            // only record key pair if record data is turned on
+            if(monitor.getUseVisualiser()){
+                monitor.recordKeyPair(vector, objVal); // added -BSS
+            }
+
         }
 
 

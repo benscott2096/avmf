@@ -2,7 +2,6 @@ package org.avmframework;
 
 import org.avmframework.objective.ObjectiveValue;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -63,15 +62,28 @@ public class Monitor {
      */
     protected long endTime;
 
+
+    // BSS added variables and objects
     protected BufferedWriter fileWriter;
+    public static final boolean USE_VISUALISER_DEFAULT = false;
+    private boolean useVisualiser; // default should be false ... however we end up handling that.
 
+    public boolean getUseVisualiser(){
+        return useVisualiser;
+    }
 
-
+    public void setUseVisualiser(boolean useVisualiser){
+        this.useVisualiser = useVisualiser;
+    }
 
     /**
      * Constructs a Monitor instance.
      * @param tp The termination policy being used by the search.
      */
+
+    // todo: set the default value for useVisualiser here. -- make this overloadable?
+
+    // constructor 1, setting useVisualiser to default value.
     public Monitor(TerminationPolicy tp) {
         this.tp = tp;
         bestObjVal = null;
@@ -80,6 +92,31 @@ public class Monitor {
         numUniqueEvaluations = 0;
         numRestarts = 0;
         startTime = System.currentTimeMillis();
+
+        // set use visualiser to default (false).
+        this.useVisualiser = USE_VISUALISER_DEFAULT;
+
+        try {
+            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.json"));
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    // constructor 2, overloaded to enable optional setting of useVisualiser to true.
+    public Monitor(TerminationPolicy tp, boolean useVisualiser) {
+        this.tp = tp;
+        bestObjVal = null;
+        bestVector = null;
+        numEvaluations = 0;
+        numUniqueEvaluations = 0;
+        numRestarts = 0;
+        startTime = System.currentTimeMillis();
+
+        // set use visualiser to boolean passed in to constructor -- BSS
+        this.useVisualiser = useVisualiser;
 
         try {
             fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.json"));
@@ -166,7 +203,7 @@ public class Monitor {
     protected AvmfRunLog runLog = new AvmfRunLog();
 
 
-    public void testOutput(Vector vector, ObjectiveValue objVal) throws TerminationException {
+    public void recordKeyPair(Vector vector, ObjectiveValue objVal) throws TerminationException {
         System.out.println("vector: " + vector + ", objVal: " + objVal);
         try {
             fileWriter.write(vector + "," + objVal);

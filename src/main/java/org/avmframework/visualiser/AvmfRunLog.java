@@ -22,4 +22,9 @@ public class AvmfRunLog {
     public AvmfIterationOutput getIterationData(int index){
         return vecObjValPairs.get(index);
     }
+
+    public ArrayList<AvmfIterationOutput> getDataPairs(){
+        return vecObjValPairs;
+
+    }
 }

@@ -35,7 +35,6 @@ public class AvmfIterationOutput {
 
     public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue){
 
-        // todo take Vector type in, convert variables to array list of Doubles (object) then store in vector array list. do the same for objective value, but is only a single value.
 
         for(int i = 0; i < vector.size(); i++ ) {
             this.vector.add(Double.valueOf(vector.getVariable(i).toString()));

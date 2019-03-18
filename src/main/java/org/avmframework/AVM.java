@@ -75,6 +75,8 @@ public class AVM {
         this.restarter = restarter;
     }
 
+
+    //todo modify java doc to account for overloading.
     /**
      * Performs the AVM search.
      * @param vector The vector of variables to be optimized.
@@ -84,6 +86,43 @@ public class AVM {
     public Monitor search(Vector vector, ObjectiveFunction objFun) {
         // set up the monitor
         this.monitor = new Monitor(tp);
+
+        // set up the objective function
+        this.objFun = objFun;
+        objFun.setMonitor(monitor);
+
+        // initialize the vector
+        this.vector = vector;
+        initializer.initialize(vector);
+
+        // is there anything to optimize?
+        if (vector.size() == 0) {
+            throw new EmptyVectorException();
+        }
+
+        try {
+            // the loop terminates when a TerminationException is thrown
+            while (true) {
+
+                // search over the vector's variables
+                alternatingVariableSearch(vector);
+
+                // restart the search
+                monitor.observeRestart();
+                restarter.initialize(vector);
+            }
+
+        } catch (TerminationException e) {
+            // the search has ended
+            monitor.observeTermination();
+        }
+
+        return monitor;
+    }
+
+    public Monitor search(Vector vector, ObjectiveFunction objFun, boolean useVisualiser) {
+        // set up the monitor
+        this.monitor = new Monitor(tp, useVisualiser); // only line that differs to search method 1 todo: something about duplicated code?
 
         // set up the objective function
         this.objFun = objFun;
@@ -130,6 +169,7 @@ public class AVM {
         ObjectiveValue lastImprovement = objFun.evaluate(vector);
         int nonImprovement = 0;
 
+        // (while number of variables with no improvement is still less than number of variables in vector being optimised) - BSS
         while (nonImprovement < abstractVector.size()) {
 
             // alternate through the variables

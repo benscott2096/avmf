@@ -16,6 +16,8 @@ import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.IntegerVariable;
 import org.avmframework.variable.Variable;
 
+import org.avmframework.visualiser.start;
+
 public class AllZeros {
 
     // HOW TO RUN:
@@ -71,7 +73,7 @@ public class AllZeros {
         AVM avm = new AVM(localSearch, terminationPolicy, initializer);
 
         // perform the search
-        Monitor monitor = avm.search(vector, objFun);
+        Monitor monitor = avm.search(vector, objFun, true);
 
         // output the results
         System.out.println("Best solution: " + monitor.getBestVector());
@@ -81,5 +83,8 @@ public class AllZeros {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
+
+        // todo: might need wraping in if... further testing needed. Call should'nt exist if useVisualiser set to false.
+        start.launchVisualiser();
     }
 }
