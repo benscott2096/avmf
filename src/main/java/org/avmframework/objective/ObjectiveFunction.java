@@ -11,6 +11,16 @@ public abstract class ObjectiveFunction {
 
     public static final boolean USE_CACHE_DEFAULT = true;
 
+    protected int iteration = 1; // init to 1, iterations indexed from 1. added - BSS
+
+    public void setIteration(int index){
+        iteration = index;
+    }
+
+    public void incrementIteration(){
+        iteration++;
+    }
+
     protected boolean useCache = USE_CACHE_DEFAULT;
     protected Map<Vector, ObjectiveValue> previousVals = new HashMap<>();
     protected Monitor monitor;
@@ -32,7 +42,7 @@ public abstract class ObjectiveFunction {
 
             // only record key pair if record data is turned on
             if (monitor.getUseVisualiser()){
-                monitor.recordKeyPair(vector, previousVals.get(vector)); // added -BSS
+                monitor.recordKeyPair(vector, previousVals.get(vector), iteration); // added -BSS
             }
 
 
@@ -57,7 +67,7 @@ public abstract class ObjectiveFunction {
 
             // only record key pair if record data is turned on
             if(monitor.getUseVisualiser()){
-                monitor.recordKeyPair(vector, objVal); // added -BSS
+                monitor.recordKeyPair(vector, objVal, iteration); // added -BSS
             }
 
         }

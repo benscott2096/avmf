@@ -11,6 +11,9 @@ public class AvmfIterationOutput {
 
     private Double objectiveValue;
 
+    private int iteration = 0;
+
+
 
 
 
@@ -32,8 +35,10 @@ public class AvmfIterationOutput {
 //        this.objectiveValue = objectiveValue;
 //    }
 
+    public int getIteration(){ return iteration;}
 
-    public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue){
+
+    public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue, int iteration){
 
 
         for(int i = 0; i < vector.size(); i++ ) {
@@ -42,6 +47,8 @@ public class AvmfIterationOutput {
 
 
         this.objectiveValue = Double.valueOf(objectiveValue.toString());
+
+        this.iteration = iteration;
     }
 
 }

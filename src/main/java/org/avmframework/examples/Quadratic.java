@@ -14,6 +14,7 @@ import org.avmframework.objective.NumericObjectiveValue;
 import org.avmframework.objective.ObjectiveFunction;
 import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.FixedPointVariable;
+import org.avmframework.visualiser.start;
 
 public class Quadratic {
 
@@ -68,7 +69,7 @@ public class Quadratic {
         AVM avm = new AVM(localSearch, terminationPolicy, initializer);
 
         // perform the search
-        Monitor monitor = avm.search(vector, objFun);
+        Monitor monitor = avm.search(vector, objFun, true);
 
         // output the results
         System.out.println("Best solution: " + monitor.getBestVector().getVariable(0));
@@ -78,5 +79,6 @@ public class Quadratic {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
+        start.launchVisualiser();
     }
 }

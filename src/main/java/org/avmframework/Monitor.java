@@ -203,14 +203,14 @@ public class Monitor {
     protected AvmfRunLog runLog = new AvmfRunLog();
 
 
-    public void recordKeyPair(Vector vector, ObjectiveValue objVal) throws TerminationException {
+    public void recordKeyPair(Vector vector, ObjectiveValue objVal, int iteration) throws TerminationException {
         System.out.println("vector: " + vector + ", objVal: " + objVal);
         try {
             fileWriter.write(vector + "," + objVal);
             fileWriter.write(System.lineSeparator());
 
 
-            runLog.addIteration(new AvmfIterationOutput(vector, objVal));
+            runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration));
         }
         catch (IOException e){
             e.printStackTrace();

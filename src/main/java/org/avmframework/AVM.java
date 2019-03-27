@@ -174,6 +174,8 @@ public class AVM {
 
             // alternate through the variables
             int variableIndex = 0;
+            // set variable index in objFun, indexed from 1 for first iteration
+            objFun.setIteration( variableIndex + 1);
             while (variableIndex < abstractVector.size() && nonImprovement < abstractVector.size()) {
 
                 // perform a local search on this variable
@@ -190,6 +192,8 @@ public class AVM {
                 }
 
                 variableIndex++;
+                //todo: add 1 to variable index in objFun.
+                objFun.incrementIteration();
             }
         }
     }

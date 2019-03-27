@@ -6,13 +6,10 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.stage.Stage;
-import javafx.scene.control.Button;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.VBox;
+import javafx.geometry.Insets;
 
-import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -26,13 +23,15 @@ public class FirstGraph extends Application {
     private double originalXAxisLowerBound;
     private double originalXAxisUpperBound;
 
+    private int currentVariable = 1;
+
     @Override public void start(Stage stage) {
         stage.setTitle("Line Chart Sample");
 
 
         final LineChart<Number,Number> lineChart = makeLineChart(start.getDataPairs());
 
-        FlowPane layout= new FlowPane();
+        VBox layout= new VBox();
 
 
 
@@ -68,7 +67,8 @@ public class FirstGraph extends Application {
             }
         });
 
-
+        layout.setMargin(lineChart, new Insets(20, 20, 20, 20));
+        layout.setMargin(zoomSlider, new Insets(20, 20, 20, 20));
 
         layout.getChildren().add(lineChart);
         layout.getChildren().add(zoomSlider);
@@ -135,7 +135,7 @@ public class FirstGraph extends Application {
 
 
 
-    private LineChart<Number,Number> makeLineChart(ArrayList<AvmfIterationOutput> dataPairs){
+    private LineChart<Number,Number> makeLineChart(ArrayList<AvmfIterationOutput> dataPairs) {
 
         //defining the axes
         final NumberAxis xAxis = new NumberAxis();
@@ -144,41 +144,43 @@ public class FirstGraph extends Application {
         yAxis.setLabel("Fitness (lower is better)");
 
 
-
         //creating the chart
-        final LineChart<Number,Number> lineChart =
-                new LineChart<Number,Number>(xAxis,yAxis);
+        final LineChart<Number, Number> lineChart =
+                new LineChart<Number, Number>(xAxis, yAxis);
 
         lineChart.setTitle("Test Line Graph");
 
 
-
-
         //defining a series
-        XYChart.Series series = setUpSeries(dataPairs);
+//        XYChart.Series series = setUpSeries(dataPairs);
 
-        lineChart.getData().addAll(series);
+//        lineChart.getData().addAll(series);
 
+        for (int it = 0; it < dataPairs.get(0).getVector().size(); it++) {
+            XYChart.Series series = setUpSeries(dataPairs);
+            lineChart.getData().add(series);
+        }
 
 
         return lineChart;
     }
 
-
     private XYChart.Series setUpSeries(ArrayList<AvmfIterationOutput> dataPairs){
 
         XYChart.Series series = new XYChart.Series();
-        series.setName("Restart 1");
+        series.setName("Variable " + currentVariable);
 
 
         for (AvmfIterationOutput pair : dataPairs){
-            series.getData().add(new XYChart.Data(pair.getVector().get(0), pair.getObjVal()));
+            if ((pair.getIteration() == currentVariable)){
+                series.getData().add(new XYChart.Data(pair.getVector().get(currentVariable -1), pair.getObjVal()));
+            }
         }
-
+        currentVariable++;
         return series;
     }
 
-
+    // why do I have this?
     public void xZoom(LineChart<Number,Number> lineChart){
         final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
         System.out.println(xAxis.getLowerBound());
