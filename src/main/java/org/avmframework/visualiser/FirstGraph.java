@@ -253,15 +253,13 @@ public class FirstGraph extends Application {
 //
 //        });
 
-
-//        lineChart.addEventHandler(MouseEvent.MOUSE_DRAGGED, handler);
+        // Panning on the graph axes
         lineChart.setOnMousePressed(pressHandler);
-
         lineChart.setOnMouseDragged(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
+                // debugging
                 System.out.println("DRAG!!!");
-
                 System.out.println(event.getX());
                 System.out.println(event.getY());
 
@@ -318,8 +316,9 @@ public class FirstGraph extends Application {
     }
 
 
-    private Double clickPointX,clickPointY = 0.0;
+    private Double clickPointX,clickPointY = 0.0; // move to top?
 
+// event handler for initial mouse click that sets up first click points of pan.
     EventHandler<MouseEvent> pressHandler = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
@@ -334,17 +333,19 @@ public class FirstGraph extends Application {
     };
 
 
-final double PAN_SENSITIVITY = 50.0; // higher = more sensitive
+final double PAN_SENSITIVITY = 50.0; // higher = more sensitive -- might need to split into x and y? wait until graph correct size.
 
 private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection, YDirection yDirection) {
     final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
     final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
 
+    // setup for x pans
     double xCurrentLowerBound = xAxis.getLowerBound();
     double xCurrentUpperBound = xAxis.getUpperBound();
     double xWidth = Math.abs(xCurrentUpperBound) + Math.abs(xCurrentLowerBound);
     double xPanStep = xWidth / PAN_SENSITIVITY;
 
+    // setup for y pans
     double yCurrentLowerBound = yAxis.getLowerBound();
     double yCurrentUpperBound = yAxis.getUpperBound();
     double yWidth = Math.abs(yCurrentUpperBound) + Math.abs(yCurrentLowerBound);
@@ -424,18 +425,20 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
 
     }
 
+    // for zooming x axis
     public void xZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
-        System.out.println(xAxis.getLowerBound());
+        System.out.println(xAxis.getLowerBound()); // debugging
 
         xAxis.setLowerBound(lowerBound);
         xAxis.setUpperBound(upperBound);
 
     }
 
+    // for zooming y axis
     public void yZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
-        System.out.println(yAxis.getLowerBound());
+        System.out.println(yAxis.getLowerBound()); // debugging
 
         yAxis.setLowerBound(lowerBound);
         yAxis.setUpperBound(upperBound);
