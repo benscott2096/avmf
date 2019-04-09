@@ -38,12 +38,12 @@ public class FirstGraph extends Application {
 
 
 
-        Slider zoomSlider = new Slider(0.1, 100, originalXAxisUpperBound);
-//        zoomSlider.setMin(0.1); // change to constant
-//        zoomSlider.setMax(originalXAxisUpperBound);
-        zoomSlider.setShowTickLabels(true);
+        Slider xZoomSlider = new Slider(0.1, 100, originalXAxisUpperBound);
+//        xZoomSlider.setMin(0.1); // change to constant
+//        xZoomSlider.setMax(originalXAxisUpperBound);
+        xZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
-        zoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
+        xZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
 
             @Override
             public void changed(ObservableValue<? extends Number> observable, //
@@ -68,10 +68,10 @@ public class FirstGraph extends Application {
         });
 
         layout.setMargin(lineChart, new Insets(20, 20, 20, 20));
-        layout.setMargin(zoomSlider, new Insets(20, 20, 20, 20));
+        layout.setMargin(xZoomSlider, new Insets(20, 20, 20, 20));
 
         layout.getChildren().add(lineChart);
-        layout.getChildren().add(zoomSlider);
+        layout.getChildren().add(xZoomSlider);
 
         Scene scene  = new Scene(layout,800,600);
 
@@ -96,9 +96,9 @@ public class FirstGraph extends Application {
 
         setupLogCalc(0.1, originalXAxisUpperBound);
 
-        zoomSlider.setMax(originalXAxisUpperBound);
-        zoomSlider.setValue(originalXAxisUpperBound);
-
+        xZoomSlider.setMax(originalXAxisUpperBound);
+        xZoomSlider.setValue(originalXAxisUpperBound);
+        xZoomSlider.setMajorTickUnit(originalXAxisUpperBound/4);
 
 
 
