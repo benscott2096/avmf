@@ -5,8 +5,9 @@ import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 
@@ -14,14 +15,34 @@ import javafx.scene.control.Slider;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 
+import javafx.event.EventHandler;
+
+
 
 
 import java.util.ArrayList;
 
+
+enum XDirection {
+    NONE,
+    LEFT,
+    RIGHT
+}
+
+enum YDirection{
+    NONE,
+    UP,
+    DOWN
+}
+
+
+
 public class FirstGraph extends Application {
 
-    private double originalXAxisLowerBound;
-    private double originalXAxisUpperBound;
+    private double originalXAxisLowerBound, originalXAxisUpperBound;
+    private double originalYAxisLowerBound, originalYAxisUpperBound;
+
+    private double xALog, xBLog, yALog, yBLog;
 
     private int currentVariable = 1;
 
@@ -39,8 +60,6 @@ public class FirstGraph extends Application {
 
 
         Slider xZoomSlider = new Slider(0.1, 100, originalXAxisUpperBound);
-//        xZoomSlider.setMin(0.1); // change to constant
-//        xZoomSlider.setMax(originalXAxisUpperBound);
         xZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
         xZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
@@ -52,7 +71,7 @@ public class FirstGraph extends Application {
                 final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
                 xAxis.setAutoRanging(false);
 
-            System.out.println("Slider has slidden!!!");
+            System.out.println("Slider X has slidden!!!");
                 System.out.println(oldValue);
                 System.out.println(newValue);
 
@@ -60,18 +79,49 @@ public class FirstGraph extends Application {
                 // todo: replace min/max things for constants.
 
                 // converts slider value into logarithmic value.
-                    double logNewValue = calcLogValue((double) newValue);
+                    double logNewValue = xCalcLogValue((double) newValue);
 
 
                     xZoom(lineChart, - logNewValue, logNewValue);
             }
         });
 
+
+        Slider yZoomSlider = new Slider(0.1, 100, originalYAxisUpperBound);
+        yZoomSlider.setShowTickLabels(true);
+        // Adding Listener to value property.
+        yZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
+
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, //
+                                Number oldValue, Number newValue) {
+
+                final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
+                yAxis.setAutoRanging(false);
+
+                System.out.println("Slider Y has slidden!!!");
+                System.out.println(oldValue);
+                System.out.println(newValue);
+
+
+                // todo: replace min/max things for constants.
+
+                // converts slider value into logarithmic value.
+                double logNewValue = yCalcLogValue((double) newValue);
+
+
+                yZoom(lineChart, 0, logNewValue);
+            }
+        });
+
         layout.setMargin(lineChart, new Insets(20, 20, 20, 20));
         layout.setMargin(xZoomSlider, new Insets(20, 20, 20, 20));
+        layout.setMargin(yZoomSlider, new Insets(20, 20, 20, 20));
+
 
         layout.getChildren().add(lineChart);
         layout.getChildren().add(xZoomSlider);
+        layout.getChildren().add(yZoomSlider);
 
         Scene scene  = new Scene(layout,800,600);
 
@@ -87,14 +137,14 @@ public class FirstGraph extends Application {
         originalXAxisLowerBound = xAxis.getLowerBound();
         originalXAxisUpperBound = xAxis.getUpperBound();
 
-        System.out.println("original lower bound");
+        System.out.println("original X lower bound");
         System.out.println(originalXAxisLowerBound);
 
-        System.out.println("original upper bound");
+        System.out.println("original X upper bound");
         System.out.println(originalXAxisUpperBound);
 
 
-        setupLogCalc(0.1, originalXAxisUpperBound);
+        xSetupLogCalc(0.1, originalXAxisUpperBound);
 
         xZoomSlider.setMax(originalXAxisUpperBound);
         xZoomSlider.setValue(originalXAxisUpperBound);
@@ -102,24 +152,59 @@ public class FirstGraph extends Application {
 
 
 
+
+
+
+
+        final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
+
+        originalYAxisLowerBound = yAxis.getLowerBound();
+        originalYAxisUpperBound = yAxis.getUpperBound();
+
+        System.out.println("original Y lower bound");
+        System.out.println(originalYAxisLowerBound);
+
+        System.out.println("original Y upper bound");
+        System.out.println(originalYAxisUpperBound);
+
+
+        ySetupLogCalc(0.1, originalYAxisUpperBound);
+
+        yZoomSlider.setMax(originalYAxisUpperBound);
+        yZoomSlider.setValue(originalYAxisUpperBound);
+        yZoomSlider.setMajorTickUnit(originalYAxisUpperBound/4);
+
+
     }
 
-    private double calcLogValue(double value){
+    private double xCalcLogValue(double value){
 
-        double logValue = aLog * Math.exp(bLog*value);
+        double logValue = xALog * Math.exp(xBLog *value);
         return logValue;
     }
 
-    private void setupLogCalc(double x, double y){
+    private void xSetupLogCalc(double x, double y){
 //        double x = 0.1;
 //        double y = 500000;
-        bLog = Math.log(y/x)/(y-x);
-        aLog = y / Math.exp(bLog * y);
-
-
+        xBLog = Math.log(y/x)/(y-x);
+        xALog = y / Math.exp(xBLog * y);
     }
 
-    private double aLog,bLog;
+
+    private double yCalcLogValue(double value){
+
+        double logValue = yALog * Math.exp(yBLog *value);
+        return logValue;
+    }
+
+    private void ySetupLogCalc(double x, double y){
+//        double x = 0.1;
+//        double y = 500000;
+        yBLog = Math.log(y/x)/(y-x);
+        yALog = y / Math.exp(yBLog * y);
+    }
+
+
 
 
 
@@ -161,9 +246,157 @@ public class FirstGraph extends Application {
             lineChart.getData().add(series);
         }
 
+//        lineChart.addEventHandler(DragEvent.DRAG_OVER , new EventHandler<DragEvent>() {
+//
+//            public void handle(DragEvent) {System.out.println("such a drag!"); }
+//
+//
+//        });
+
+
+//        lineChart.addEventHandler(MouseEvent.MOUSE_DRAGGED, handler);
+        lineChart.setOnMousePressed(pressHandler);
+
+        lineChart.setOnMouseDragged(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                System.out.println("DRAG!!!");
+
+                System.out.println(event.getX());
+                System.out.println(event.getY());
+
+                double newX = event.getX();
+                double newY = event.getY();
+
+
+                // both axis pans
+                if (clickPointX < newX && clickPointY < newY){
+                    System.out.println("Down Right");
+                    panGraph(lineChart,XDirection.LEFT, YDirection.DOWN);
+                }
+                else if(clickPointX > newX && clickPointY < newY){
+                    System.out.println("Down Left");
+                    panGraph(lineChart,XDirection.RIGHT, YDirection.DOWN);
+                }
+                else if(clickPointX < newX && clickPointY > newY){
+                    System.out.println("Up Right");
+                    panGraph(lineChart, XDirection.LEFT, YDirection.UP);
+                }
+                else if(clickPointX > newX && clickPointY > newY){
+                    System.out.println("Up Left");
+                    panGraph(lineChart, XDirection.RIGHT, YDirection.UP);
+                }
+
+                // single axis pans
+                else if(clickPointY > newY){
+                    System.out.println("Up");
+                    panGraph(lineChart, XDirection.NONE, YDirection.UP);
+                }
+                else if(clickPointY < newY){
+                    System.out.println("Down");
+                    panGraph(lineChart, XDirection.NONE, YDirection.DOWN);
+                }
+                else if(clickPointX > newX){
+                    System.out.println("Left");
+                    panGraph(lineChart, XDirection.RIGHT, YDirection.NONE);
+                }
+                else if(clickPointX < newX){
+                    System.out.println("Right");
+                    panGraph(lineChart, XDirection.LEFT, YDirection.NONE);
+                }
+
+                // update click points
+                clickPointX = newX;
+                clickPointY = newY;
+
+            }
+        });
+
+
 
         return lineChart;
     }
+
+
+    private Double clickPointX,clickPointY = 0.0;
+
+    EventHandler<MouseEvent> pressHandler = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            System.out.println("press!!!");
+            System.out.println(event.getX());
+            System.out.println(event.getY());
+
+            clickPointX = event.getX();
+            clickPointY = event.getY();
+
+        }
+    };
+
+
+final double PAN_SENSITIVITY = 50.0; // higher = more sensitive
+
+private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection, YDirection yDirection) {
+    final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
+    final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
+
+    double xCurrentLowerBound = xAxis.getLowerBound();
+    double xCurrentUpperBound = xAxis.getUpperBound();
+    double xWidth = Math.abs(xCurrentUpperBound) + Math.abs(xCurrentLowerBound);
+    double xPanStep = xWidth / PAN_SENSITIVITY;
+
+    double yCurrentLowerBound = yAxis.getLowerBound();
+    double yCurrentUpperBound = yAxis.getUpperBound();
+    double yWidth = Math.abs(yCurrentUpperBound) + Math.abs(yCurrentLowerBound);
+    double yPanStep = yWidth / PAN_SENSITIVITY;
+
+    // X axis panning right
+    if(xCurrentUpperBound < originalXAxisUpperBound){
+        if (xDirection == XDirection.RIGHT){
+            xAxis.setLowerBound(xCurrentLowerBound + xPanStep);
+            xAxis.setUpperBound(xCurrentUpperBound + xPanStep);
+        }
+    }
+    else{
+        System.out.println("reached X upper bound");
+    }
+    // X axis panning Left
+    if(xCurrentLowerBound > originalXAxisLowerBound){
+        if (xDirection == XDirection.LEFT){
+            xAxis.setLowerBound(xCurrentLowerBound - xPanStep);
+            xAxis.setUpperBound(xCurrentUpperBound - xPanStep);
+        }
+    }
+    else {
+        System.out.println("reached X Lower bound");
+    }
+
+    // Y axis panning down
+    if(yCurrentUpperBound < originalYAxisUpperBound){
+        if (yDirection == YDirection.DOWN){
+            yAxis.setLowerBound(yCurrentLowerBound + yPanStep);
+            yAxis.setUpperBound(yCurrentUpperBound + yPanStep);
+        }
+    }
+    else{
+        System.out.println("reached Y upper bound");
+    }
+    // Y axis panning up
+    if(yCurrentLowerBound > originalYAxisLowerBound){
+        if (yDirection == YDirection.UP){
+            yAxis.setLowerBound(yCurrentLowerBound - yPanStep);
+            yAxis.setUpperBound(yCurrentUpperBound - yPanStep);
+        }
+    }
+    else {
+        System.out.println("reached Y Lower bound");
+    }
+
+
+
+}
+
+
 
     private XYChart.Series setUpSeries(ArrayList<AvmfIterationOutput> dataPairs){
 
@@ -197,6 +430,15 @@ public class FirstGraph extends Application {
 
         xAxis.setLowerBound(lowerBound);
         xAxis.setUpperBound(upperBound);
+
+    }
+
+    public void yZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
+        final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
+        System.out.println(yAxis.getLowerBound());
+
+        yAxis.setLowerBound(lowerBound);
+        yAxis.setUpperBound(upperBound);
 
     }
 
