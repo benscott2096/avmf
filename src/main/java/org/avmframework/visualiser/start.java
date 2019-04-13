@@ -13,6 +13,7 @@ import com.google.gson.GsonBuilder;
 public class start {
 
     protected static AvmfRunLog runLog = new AvmfRunLog();
+    protected static String jsonFileName;
 
 
 
@@ -20,15 +21,16 @@ public class start {
 
     public static void main(String[] args){
 
-    launchVisualiser();
+    launchVisualiser(jsonFileName);
 
 
     }
 
     // method that launches the visualiser app
-    public static void launchVisualiser(){
+    public static void launchVisualiser(String fileName){
         // stub for continuing...
         System.out.println("Launching Visualiser");
+        jsonFileName = fileName;
 
 
 
@@ -57,7 +59,7 @@ public class start {
     public static AvmfRunLog loadRunLog() throws FileNotFoundException {
         GsonBuilder builder = new GsonBuilder();
         Gson gson = builder.create();
-        BufferedReader bufferedReader = new BufferedReader(new FileReader( "testingjson.json"));
+        BufferedReader bufferedReader = new BufferedReader(new FileReader( jsonFileName));
 
         AvmfRunLog runLog = gson.fromJson(bufferedReader, AvmfRunLog.class);
         return runLog;

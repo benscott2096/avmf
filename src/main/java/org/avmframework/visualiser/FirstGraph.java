@@ -2,18 +2,24 @@ package org.avmframework.visualiser;
 
 
 
-import javafx.animation.SequentialTransition;
+import javafx.animation.*;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
+import javafx.geometry.Orientation;
+import javafx.geometry.HPos;
+import javafx.geometry.VPos;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.event.ActionEvent;
 import javafx.stage.Stage;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 
@@ -24,9 +30,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.util.Duration;
 
 
@@ -65,21 +68,26 @@ public class FirstGraph extends Application {
 
     // the avmfAnimationSequence
     private SequentialTransition avmfAnimationSequence = new SequentialTransition();
+    final private Label currentOptVarValueLbl = new Label(); // initialised empty
+    final private Label animationRateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getCurrentRate()));
+    final private Label animationStateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getStatus()));
 
     @Override public void start(Stage stage) {
         stage.setTitle("Line Chart Sample");
 
+    // setting event handler for animation sequence finish.
+    avmfAnimationSequence.setOnFinished(new EventHandler<ActionEvent>() {
+        @Override
+        public void handle(ActionEvent event) {
+            animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+        }
+    });
 
         final LineChart<Number,Number> lineChart = makeLineChart(start.getDataPairs());
 
-        VBox layout= new VBox();
 
-
-
-
-
-
-        final Slider xZoomSlider = new Slider(0.1, 100, originalXAxisUpperBound);
+        final Slider xZoomSlider = new Slider(1, 100, originalXAxisUpperBound);
+        xZoomSlider.setOrientation(Orientation.VERTICAL);
         xZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
         xZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
@@ -100,13 +108,17 @@ public class FirstGraph extends Application {
                 double logNewValue = xCalcLogValue((double) newValue);
                 // find new centre of x zoom when graph panned
                 double pannedMidpoint = (currentXUpperBound + currentXLowerBound)/2;
+                // calculating new bounds
+                double newLowerBound = - (logNewValue - pannedMidpoint);
+                double newUpperBound = logNewValue + pannedMidpoint;
 
-                xZoom(lineChart, - (logNewValue - pannedMidpoint), (logNewValue + pannedMidpoint));
+                xZoom(lineChart, newLowerBound, newUpperBound);
             }
         });
 
 
-        final Slider yZoomSlider = new Slider(0.1, 100, originalYAxisUpperBound);
+        final Slider yZoomSlider = new Slider(1, 100, originalYAxisUpperBound);
+        yZoomSlider.setOrientation(Orientation.VERTICAL);
         yZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
         yZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
@@ -128,20 +140,12 @@ public class FirstGraph extends Application {
                 double logNewValue = yCalcLogValue((double) newValue);
                 // find new centre of y zoom when graph panned
                 double pannedMidpoint = (currentYUpperBound + currentYLowerBound)/2;
-
-
-//                yZoom(lineChart, - (logNewValue - pannedMidpoint), (logNewValue + pannedMidpoint));
+                // calculating new bounds
                 double newLowerBound = - (logNewValue - pannedMidpoint);
                 double newUpperBound = logNewValue + pannedMidpoint;
 
-//
-//                if (- (logNewValue - pannedMidpoint) > originalYAxisLowerBound && (logNewValue + pannedMidpoint) < originalYAxisUpperBound){
-//                    yZoom(lineChart, - (logNewValue - pannedMidpoint), (logNewValue + pannedMidpoint));
-//                }
-//                else{
-//                    yZoom(lineChart, originalYAxisLowerBound, originalYAxisUpperBound);
-//                }
 
+                // constritions on bounds for y axis zooming
                 if (newLowerBound < originalYAxisLowerBound && newUpperBound > originalYAxisUpperBound){
                     yZoom(lineChart, originalYAxisLowerBound, originalYAxisUpperBound);
                 }
@@ -178,25 +182,29 @@ public class FirstGraph extends Application {
             }
         });
 
-        Button playAnimationButton = new Button("Play Animation");
+        Button playAnimationButton = new Button("Play");
         playAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 avmfAnimationSequence.play();
                 System.out.println(avmfAnimationSequence.getCuePoints());
+                animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
+                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
             }
         });
 
-        Button pauseAnimationButton  = new Button("Pause Animation");
+        Button pauseAnimationButton  = new Button("Pause");
         pauseAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 avmfAnimationSequence.pause();
+                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
             }
         });
 
-        Button restartAnimationButton  = new Button("Restart Animation");
+        Button restartAnimationButton  = new Button("Restart");
         restartAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 avmfAnimationSequence.playFromStart();
+                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
             }
         });
 
@@ -204,8 +212,11 @@ public class FirstGraph extends Application {
         decreaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 double currentRate = avmfAnimationSequence.getCurrentRate();
-                if (currentRate > 1) {
+                // shouldn't update while paused as creates bug
+                if (currentRate > 1 && avmfAnimationSequence.getStatus() != Animation.Status.PAUSED) {
                     avmfAnimationSequence.setRate(currentRate - 1);
+                    // updating reporting of rate
+                    animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
                 }
             }
         });
@@ -214,25 +225,30 @@ public class FirstGraph extends Application {
         increaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 double currentRate = avmfAnimationSequence.getCurrentRate();
-                if (currentRate <= 9) {
+                // shouldn't update while paused as creates bug
+                if (currentRate <= 9 && avmfAnimationSequence.getStatus() != Animation.Status.PAUSED) {
                     avmfAnimationSequence.setRate(currentRate + 1);
+                    // updating reporting of rate
+                    animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
                 }
             }
         });
 
-        Button jumpToEndButton  = new Button("Jump to end");
+        Button jumpToEndButton  = new Button("Jump To End");
         jumpToEndButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
             avmfAnimationSequence.jumpTo("end");
+            animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
             }
         });
 
 
-        Button previousVariableButton  = new Button("previous variable");
+        Button previousVariableButton  = new Button("Previous Variable");
         previousVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 if (currentAnimatedVariable > 0) {
                     currentAnimatedVariable--;
+                    currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
                 }
                 System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                 avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
@@ -240,12 +256,13 @@ public class FirstGraph extends Application {
             }
         });
 
-        Button nextVariableButton  = new Button("next variable");
+        Button nextVariableButton  = new Button("Next Variable");
         nextVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 // if possible increment index of current animated variable
                 if (currentAnimatedVariable < noOfVariables - 1) {
                     currentAnimatedVariable++;
+                    currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
                 }
                 System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                 // jump to cure point of next variable.
@@ -257,31 +274,91 @@ public class FirstGraph extends Application {
 
 
 
-        layout.setMargin(lineChart, new Insets(20, 20, 20, 20));
-        layout.setMargin(xZoomSlider, new Insets(20, 20, 20, 20));
-        layout.setMargin(yZoomSlider, new Insets(20, 20, 20, 20));
-        layout.setMargin(resetGraphButton, new Insets(20, 20, 20, 20));
-//        layout.setMargin(playAnimationButton, new Insets(20, 20, 20, 20));
-//        layout.setMargin(pauseAnimationButton, new Insets(20, 20, 20, 20));
-//        layout.setMargin(restartAnimationButton, new Insets(20, 20, 20, 20));
-//        layout.setMargin(setAnimationRateButton, new Insets(20, 20, 20, 20));
 
-        layout.getChildren().add(lineChart);
-        layout.getChildren().add(xZoomSlider);
-        layout.getChildren().add(yZoomSlider);
-        layout.getChildren().add(resetGraphButton);
-        layout.getChildren().add(playAnimationButton);
-        layout.getChildren().add(pauseAnimationButton);
-        layout.getChildren().add(restartAnimationButton);
-        layout.getChildren().add(decreaseRateButton);
-        layout.getChildren().add(increaseRateButton);
-        layout.getChildren().add(jumpToEndButton);
-        layout.getChildren().add(previousVariableButton);
-        layout.getChildren().add(nextVariableButton);
+
+        BorderPane border = new BorderPane();
+
+
+        // unchanging labels
+        Label headerTitle = new Label("Header Title");
+        Label xZoomLbl = new Label("xZoom");
+        Label yZoomLbl = new Label("yZoom");
+        Label currentOptVarLbl = new Label("Optimising Variable:");
+        Label animationStateLbl = new Label("Animation State:");
+        Label animationRateLbl = new Label("Animation Rate:");
+        Label animationControlLbl = new Label("Animation Control: ");
 
 
 
-        Scene scene  = new Scene(layout,800,600);
+        GridPane zoomControl = new GridPane();
+        zoomControl.setHgap(10);
+        zoomControl.setVgap(10);
+        zoomControl.setPadding(new Insets(10, 10, 10, 10));
+
+        zoomControl.add(xZoomLbl,0,0);
+        zoomControl.add(yZoomLbl,1,0);
+        zoomControl.add(xZoomSlider, 0,1);
+        zoomControl.add(yZoomSlider,1,1);
+        zoomControl.add(resetGraphButton,0,2,2,1);
+        GridPane.setHalignment(resetGraphButton, HPos.CENTER);
+
+//        zoomControl.getChildren().addAll(
+//                sliders,
+//                resetGraphButton
+//        );
+
+
+        HBox animationControl = new HBox();
+        animationControl.setAlignment(Pos.BOTTOM_CENTER);
+
+
+        animationControl.getChildren().addAll(
+                animationControlLbl,
+                playAnimationButton,
+                pauseAnimationButton,
+                restartAnimationButton,
+                decreaseRateButton,
+                increaseRateButton,
+                previousVariableButton,
+                nextVariableButton,
+                jumpToEndButton
+        );
+
+        animationControlLbl.setAlignment(Pos.TOP_CENTER);
+
+        GridPane headerArea = new GridPane();
+        headerArea.add(headerTitle,1,1, 1 , 2);
+        GridPane.setHalignment(headerTitle, HPos.CENTER);
+
+        GridPane reportingArea = new GridPane();
+        reportingArea.add(currentOptVarLbl,0,0);
+        reportingArea.add(currentOptVarValueLbl,1,0);
+        reportingArea.add(animationStateLbl,0,1);
+        reportingArea.add(animationStateValueLbl,1,1);
+        reportingArea.add(animationRateLbl,0,2);
+        reportingArea.add(animationRateValueLbl,1,2);
+
+
+
+        // VBox for Right hand side
+        VBox rightArea = new VBox();
+        rightArea.getChildren().addAll(
+                headerArea,
+                zoomControl,
+                reportingArea
+        );
+
+        // adding areas to main layout
+        border.setCenter(lineChart);
+        BorderPane.setAlignment(animationControl, Pos.BOTTOM_RIGHT);
+        border.setBottom(animationControl);
+
+
+        border.setRight(rightArea);
+
+
+
+        Scene scene  = new Scene(border,1366,768);
 
 
         stage.setScene(scene);
@@ -416,6 +493,8 @@ public class FirstGraph extends Application {
                 @Override
                 public void handle(ActionEvent event) {
                     currentAnimatedVariable = variableNoHelper;
+                    currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label for current variable being optimised
+                    animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus())); // update reporting label for animation state.
                 }
             });
             avmfAnimationSequence.getChildren().add(fadeInLandscape); // adding timeline fade to avmfAnimationSequence
@@ -611,10 +690,8 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
 
 
     private XYChart.Series setUpSeries(ArrayList<AvmfIterationOutput> dataPairs){
-
         XYChart.Series series = new XYChart.Series();
         series.setName("Variable " + currentVariable);
-
 
         for (AvmfIterationOutput pair : dataPairs){
             if ((pair.getIteration() == currentVariable)){
@@ -623,7 +700,6 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
                 seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable -1), pair.getObjVal()));
             }
         }
-
 
         currentVariable++;
         return series;

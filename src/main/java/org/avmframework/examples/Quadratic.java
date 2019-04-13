@@ -79,6 +79,6 @@ public class Quadratic {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
-        start.launchVisualiser();
+        start.launchVisualiser(Monitor.getFileName());
     }
 }

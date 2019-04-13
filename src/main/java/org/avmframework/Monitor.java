@@ -11,6 +11,8 @@ import com.google.gson.GsonBuilder;
 import org.avmframework.visualiser.AvmfIterationOutput;
 import org.avmframework.visualiser.AvmfRunLog;
 
+import java.util.Date;
+import java.text.SimpleDateFormat;
 /**
  * A Monitor instance is used by an AVM object to keep track of the candidate solution with the best objective value,
  * the number of objective function evaluations that have taken place, and other information. It is also responsible
@@ -67,6 +69,11 @@ public class Monitor {
     protected BufferedWriter fileWriter;
     public static final boolean USE_VISUALISER_DEFAULT = false;
     private boolean useVisualiser; // default should be false ... however we end up handling that.
+    private static String fileName; // todo make a setter and getter and make private.
+
+    public static String getFileName(){
+        return fileName;
+    }
 
     public boolean getUseVisualiser(){
         return useVisualiser;
@@ -229,33 +236,26 @@ public class Monitor {
     public void observeTermination() {
         endTime = System.currentTimeMillis();
         try {
-//            fileWriter.write(getBestVector().toString());
-//            fileWriter.write(System.lineSeparator());
-////
-//            fileWriter.write(getBestObjVal().toString());
-//            fileWriter.write(System.lineSeparator());
-//
-//            fileWriter.write(getNumEvaluations());
-//            fileWriter.write(System.lineSeparator());
-//
-//            fileWriter.write(getNumUniqueEvaluations());
-//            fileWriter.write(System.lineSeparator());
 
-//            fileWriter.write((int)getRunningTime());
-//            fileWriter.write(System.lineSeparator());
+            System.out.println(generateFileName());
 
             fileWriter.close();
 
             GsonBuilder builder = new GsonBuilder();
             Gson gson = builder.create();
-            FileWriter writer = new FileWriter("testingjson.json");
-//            AvmfRunLog plot = new AvmfRunLog(getBestVector());
-//            System.out.println(getBestVector());
+            this.fileName = generateFileName();
+            FileWriter writer = new FileWriter(this.fileName);
             writer.write(gson.toJson(runLog));
             writer.close();
         }
         catch (IOException e){
             e.printStackTrace();
         }
+    }
+
+    private String generateFileName(){
+        String timeStamp = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(new Date());
+        String fileName = "AVMf_Run_Output_" + timeStamp;
+        return fileName;
     }
 }

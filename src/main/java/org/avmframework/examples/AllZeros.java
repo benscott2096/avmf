@@ -85,6 +85,6 @@ public class AllZeros {
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
 
         // todo: might need wraping in if... further testing needed. Call should'nt exist if useVisualiser set to false.
-        start.launchVisualiser();
+        start.launchVisualiser(Monitor.getFileName());
     }
 }
