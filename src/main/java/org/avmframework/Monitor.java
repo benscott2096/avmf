@@ -66,10 +66,9 @@ public class Monitor {
 
 
     // BSS added variables and objects
-    protected BufferedWriter fileWriter;
     public static final boolean USE_VISUALISER_DEFAULT = false;
     private boolean useVisualiser; // default should be false ... however we end up handling that.
-    private static String fileName; // todo make a setter and getter and make private.
+    private static String fileName;
 
     public static String getFileName(){
         return fileName;
@@ -88,7 +87,7 @@ public class Monitor {
      * @param tp The termination policy being used by the search.
      */
 
-    // todo: set the default value for useVisualiser here. -- make this overloadable?
+    // todo: set the default value for useVisualiser here. -- make this overloadable? - think this is done?
 
     // constructor 1, setting useVisualiser to default value.
     public Monitor(TerminationPolicy tp) {
@@ -102,13 +101,6 @@ public class Monitor {
 
         // set use visualiser to default (false).
         this.useVisualiser = USE_VISUALISER_DEFAULT;
-
-        try {
-            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.json"));
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
 
     }
 
@@ -125,12 +117,7 @@ public class Monitor {
         // set use visualiser to boolean passed in to constructor -- BSS
         this.useVisualiser = useVisualiser;
 
-        try {
-            fileWriter = new BufferedWriter(new FileWriter("/Users/ben/the_degree/3rd_year/COM3610_Dissertation_Project/project/avmf/samplefile.json"));
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+
 
     }
 
@@ -212,16 +199,8 @@ public class Monitor {
 
     public void recordKeyPair(Vector vector, ObjectiveValue objVal, int iteration) throws TerminationException {
         System.out.println("vector: " + vector + ", objVal: " + objVal);
-        try {
-            fileWriter.write(vector + "," + objVal);
-            fileWriter.write(System.lineSeparator());
 
-
-            runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration));
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
+        runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration));
         // handle writing variables and objective values to file here -- BSS
     }
 
@@ -239,12 +218,15 @@ public class Monitor {
 
             System.out.println(generateFileName());
 
-            fileWriter.close();
+//            fileWriter.close();
 
             GsonBuilder builder = new GsonBuilder();
             Gson gson = builder.create();
-            this.fileName = generateFileName();
-            FileWriter writer = new FileWriter(this.fileName);
+
+            //Generate unique filename for JSON file
+            fileName = generateFileName();
+            FileWriter writer = new FileWriter(fileName);
+            // Write Json to file
             writer.write(gson.toJson(runLog));
             writer.close();
         }
@@ -253,9 +235,13 @@ public class Monitor {
         }
     }
 
+    /**
+     * Generates a unique filename based on the timestamp of the AVMf run.
+     * @return string filename generated
+     */
     private String generateFileName(){
         String timeStamp = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(new Date());
-        String fileName = "AVMf_Run_Output_" + timeStamp;
+        String fileName = "AVMf_Run_Output_" + timeStamp + ".json";
         return fileName;
     }
 }
