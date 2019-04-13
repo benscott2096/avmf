@@ -4,6 +4,7 @@ package org.avmframework.visualiser;
 
 import javafx.animation.*;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.HPos;
@@ -17,6 +18,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.event.ActionEvent;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.*;
@@ -33,7 +35,8 @@ import javafx.event.EventHandler;
 import javafx.util.Duration;
 
 
-
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 
@@ -64,7 +67,7 @@ public class FirstGraph extends Application {
     private int currentVariable = 1;
     // variable to keeping track of which vector variable is currently being animated
     private int currentAnimatedVariable = 0; // first landscape cuepoint has label 0
-    private int noOfVariables = start.getDataPairs().get(0).getVector().size();
+    private int noOfVariables;
 
     // the avmfAnimationSequence
     private SequentialTransition avmfAnimationSequence = new SequentialTransition();
@@ -72,8 +75,33 @@ public class FirstGraph extends Application {
     final private Label animationRateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getCurrentRate()));
     final private Label animationStateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getStatus()));
 
-    @Override public void start(Stage stage) {
-        stage.setTitle("Line Chart Sample");
+    @Override public void start(final Stage stage) {
+
+        String fileName = "Placeholder";
+
+        // handles loading in a file using file chooser if visualiser not implemented in AVMf... todo: reword
+        if (!start.fileLoaded){
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Open Resource File");
+            File file = fileChooser.showOpenDialog(stage);
+            String filePath = String.valueOf(file.toPath());
+            fileName = file.getName();
+            System.out.println(filePath);
+            start.setJsonFileName(filePath);
+            try{
+                start.loadRunLog(filePath);
+                System.out.println("File Loaded");
+                System.out.println(start.getDataPairs());
+
+            }
+            catch(FileNotFoundException e){
+                System.out.println("Error loading JSON run log file");
+            }
+        }
+
+        noOfVariables = start.getDataPairs().get(0).getVector().size();
+
+        stage.setTitle(fileName);
 
     // setting event handler for animation sequence finish.
     avmfAnimationSequence.setOnFinished(new EventHandler<ActionEvent>() {
@@ -274,8 +302,6 @@ public class FirstGraph extends Application {
 
 
 
-
-
         BorderPane border = new BorderPane();
 
 
@@ -301,11 +327,6 @@ public class FirstGraph extends Application {
         zoomControl.add(yZoomSlider,1,1);
         zoomControl.add(resetGraphButton,0,2,2,1);
         GridPane.setHalignment(resetGraphButton, HPos.CENTER);
-
-//        zoomControl.getChildren().addAll(
-//                sliders,
-//                resetGraphButton
-//        );
 
 
         HBox animationControl = new HBox();

@@ -2,7 +2,6 @@ package org.avmframework.visualiser;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-//import java.io.FileWriter;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
@@ -13,20 +12,26 @@ import com.google.gson.GsonBuilder;
 public class start {
 
     protected static AvmfRunLog runLog = new AvmfRunLog();
-    protected static String jsonFileName;
+    private static String jsonFileName;
 
+    public static void setJsonFileName(String fileName){
+        jsonFileName = fileName;
+    }
+    public static boolean fileLoaded = true;
 
-
-
-
+    // entry point for launch without implementation. choose file step
     public static void main(String[] args){
 
-    launchVisualiser(jsonFileName);
+        jsonFileName = "something";
+        fileLoaded = false;
 
+//        ChooseFile.launchFileChooser(args);
+//        System.out.println(jsonFileName);
 
+        launchVisualiser(jsonFileName);
     }
 
-    // method that launches the visualiser app
+    // method that launches the visualiser app, requires a file name as a string.
     public static void launchVisualiser(String fileName){
         // stub for continuing...
         System.out.println("Launching Visualiser");
@@ -34,35 +39,31 @@ public class start {
 
 
 
-
-        try{
-            runLog = loadRunLog();
-            System.out.println("File Loaded");
-            String[] args = new String[] {""};
-//            FirstGraph.main(args);
-            FirstGraph.launchUI(args);
-            // rough test for seeing if data loaded from JSON
-//            System.out.println(runLog.getIterationData(6).getVector());
-//            System.out.println(runLog.getIterationData(6).getObjVal());
+        if (fileLoaded) {
+            try {
+                loadRunLog(jsonFileName);
+                System.out.println("File Loaded");
 
 
-        }
-        catch(FileNotFoundException e){
-            System.out.println("Error loading JSON run log file");
+
+            } catch (FileNotFoundException e) {
+                System.out.println("Error loading JSON run log file");
+            }
         }
 
+        String[] args = new String[]{""};
+        FirstGraph.launchUI(args);
 
     }
 
-
-    //todo: pass in and use file name for loading.
-    public static AvmfRunLog loadRunLog() throws FileNotFoundException {
+    // experiment with void
+    public static void loadRunLog(String jsonFileName) throws FileNotFoundException {
         GsonBuilder builder = new GsonBuilder();
         Gson gson = builder.create();
         BufferedReader bufferedReader = new BufferedReader(new FileReader( jsonFileName));
 
-        AvmfRunLog runLog = gson.fromJson(bufferedReader, AvmfRunLog.class);
-        return runLog;
+        AvmfRunLog runLog1 = gson.fromJson(bufferedReader, AvmfRunLog.class);
+        runLog = runLog1;
 
     }
 
