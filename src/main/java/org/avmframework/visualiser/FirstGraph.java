@@ -24,6 +24,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.Tooltip;
+import java.lang.reflect.Field;
 
 import javafx.scene.control.Slider;
 import javafx.beans.value.ChangeListener;
@@ -69,11 +71,15 @@ public class FirstGraph extends Application {
     private int currentAnimatedVariable = 0; // first landscape cuepoint has label 0
     private int noOfVariables;
 
+
     // the avmfAnimationSequence
     private SequentialTransition avmfAnimationSequence = new SequentialTransition();
     final private Label currentOptVarValueLbl = new Label(); // initialised empty
     final private Label animationRateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getCurrentRate()));
     final private Label animationStateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getStatus()));
+
+    final private Label pairVariableValueLbL = new Label("");
+    final private Label pairVariableFitnessLbl = new Label("");
 
     @Override public void start(final Stage stage) {
 
@@ -173,7 +179,7 @@ public class FirstGraph extends Application {
                 double newUpperBound = logNewValue + pannedMidpoint;
 
 
-                // constritions on bounds for y axis zooming
+                // constrictions on bounds for y axis zooming
                 if (newLowerBound < originalYAxisLowerBound && newUpperBound > originalYAxisUpperBound){
                     yZoom(lineChart, originalYAxisLowerBound, originalYAxisUpperBound);
                 }
@@ -267,6 +273,23 @@ public class FirstGraph extends Application {
             @Override public void handle(ActionEvent e) {
             avmfAnimationSequence.jumpTo("end");
             animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+
+            // set tool tips on all nodes.
+            ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                // get series from chart
+               for (XYChart.Series series : chartData){
+                   ObservableList<XYChart.Data> theData = series.getData();
+
+                   // set tooltips for all datapoints of series
+                   for (XYChart.Data dataPoint : theData){
+                       Node dataPointNode = dataPoint.getNode();
+                       final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                       hackTooltipStartTiming(tooltip);
+                       Tooltip.install(dataPointNode,tooltip);
+
+                   }
+               }
+
             }
         });
 
@@ -280,6 +303,30 @@ public class FirstGraph extends Application {
                 }
                 System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                 avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
+
+
+                // remove tooltips from series now hidden.
+                ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+
+
+                // get from chart the series to remove tooltips from.
+                // remove tooltips from previously animated series and currently animated series.
+                for (int i = currentAnimatedVariable; i <= currentAnimatedVariable + 1; i++ ){
+                    XYChart.Series series = chartData.get(i);
+                    ObservableList<XYChart.Data> theData = series.getData();
+
+                    // uninstall tooltips for all datapoints of series
+                    for (XYChart.Data dataPoint : theData){
+                        Node dataPointNode = dataPoint.getNode();
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                        hackTooltipStartTiming(tooltip);
+                        Tooltip.uninstall(dataPointNode,tooltip);
+
+                    }
+                }
+
+
+
 
             }
         });
@@ -295,6 +342,22 @@ public class FirstGraph extends Application {
                 System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                 // jump to cure point of next variable.
                 avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
+
+
+                // add tooltips to series before the currently animated one
+                ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                XYChart.Series series = chartData.get(currentAnimatedVariable-1);
+                ObservableList<XYChart.Data> theData = series.getData();
+
+                // set tooltips for all datapoints of series
+                for (XYChart.Data dataPoint : theData){
+                    Node dataPointNode = dataPoint.getNode();
+                    final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                    hackTooltipStartTiming(tooltip);
+                    Tooltip.install(dataPointNode,tooltip);
+
+                }
+
 
 
             }
@@ -313,6 +376,9 @@ public class FirstGraph extends Application {
         Label animationStateLbl = new Label("Animation State:");
         Label animationRateLbl = new Label("Animation Rate:");
         Label animationControlLbl = new Label("Animation Control: ");
+
+        Label variableValueLbl = new Label("Variable Value: ");
+        Label variableFitnessLbl = new Label("Variable Fitness");
 
 
 
@@ -358,6 +424,10 @@ public class FirstGraph extends Application {
         reportingArea.add(animationStateValueLbl,1,1);
         reportingArea.add(animationRateLbl,0,2);
         reportingArea.add(animationRateValueLbl,1,2);
+        reportingArea.add(variableValueLbl,0,3);
+        reportingArea.add(pairVariableValueLbL,1,3);
+        reportingArea.add(variableFitnessLbl,0,4);
+        reportingArea.add(pairVariableFitnessLbl, 1,4);
 
 
 
@@ -524,18 +594,33 @@ public class FirstGraph extends Application {
 
             // setting up animation timeline for dropping points onto landscape.
             ObservableList<XYChart.Data> theData = series.getData();
-            for (XYChart.Data dataPoint : theData){
-                Node dataPointNode = dataPoint.getNode();
+            for (final XYChart.Data dataPoint : theData){
+                final Node dataPointNode = dataPoint.getNode();
                 dataPointNode.setOpacity(0);
                 dataPointNode.setScaleX(4);
                 dataPointNode.setScaleY(4);
-                Timeline dropPoint = new Timeline();
+                final Timeline dropPoint = new Timeline();
                 // keyframes for doing the fade in and shrink onto landscape for each point.
                 dropPoint.getKeyFrames().addAll(
                         new KeyFrame(new Duration(1000), new KeyValue(dataPointNode.opacityProperty(), 1 )),
                         new KeyFrame(new Duration(1000), new KeyValue(dataPointNode.scaleXProperty(), 1 )),
                         new KeyFrame(new Duration(1000), new KeyValue(dataPointNode.scaleYProperty(), 1 ))
                         );
+
+                dropPoint.setOnFinished(new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent event) {
+                        pairVariableValueLbL.setText(String.valueOf(dataPoint.getXValue()));
+                        pairVariableFitnessLbl.setText(String.valueOf(dataPoint.getYValue()));
+
+                        // setting tooltip on data points
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                        hackTooltipStartTiming(tooltip);
+                        Tooltip.install(dataPointNode,tooltip);
+                    }
+                });
+
+
                 avmfAnimationSequence.getChildren().addAll(dropPoint); // adding keyframes to avmfAnimationSequence.
 
             }
@@ -617,6 +702,26 @@ public class FirstGraph extends Application {
         });
 
         return lineChart;
+    }
+
+
+    // used to control the speed of tooltip show.
+    // found here: https://stackoverflow.com/questions/26854301/how-to-control-the-javafx-tooltips-delay
+    public static void hackTooltipStartTiming(Tooltip tooltip) {
+        try {
+            Field fieldBehavior = tooltip.getClass().getDeclaredField("BEHAVIOR");
+            fieldBehavior.setAccessible(true);
+            Object objBehavior = fieldBehavior.get(tooltip);
+
+            Field fieldTimer = objBehavior.getClass().getDeclaredField("activationTimer");
+            fieldTimer.setAccessible(true);
+            Timeline objTimer = (Timeline) fieldTimer.get(objBehavior);
+
+            objTimer.getKeyFrames().clear();
+            objTimer.getKeyFrames().add(new KeyFrame(new Duration(100)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

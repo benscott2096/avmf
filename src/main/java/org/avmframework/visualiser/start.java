@@ -25,8 +25,6 @@ public class start {
         jsonFileName = "something";
         fileLoaded = false;
 
-//        ChooseFile.launchFileChooser(args);
-//        System.out.println(jsonFileName);
 
         launchVisualiser(jsonFileName);
     }
