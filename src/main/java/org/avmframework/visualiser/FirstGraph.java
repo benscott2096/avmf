@@ -15,6 +15,10 @@ import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import com.sun.javafx.charts.Legend;
+import javafx.scene.Cursor;
+import javafx.scene.input.MouseButton;
+
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.event.ActionEvent;
@@ -35,6 +39,7 @@ import javafx.event.EventHandler;
 
 
 import javafx.util.Duration;
+import org.avmframework.examples.inputdatageneration.line.Line;
 
 
 import java.io.File;
@@ -113,7 +118,9 @@ public class FirstGraph extends Application {
     avmfAnimationSequence.setOnFinished(new EventHandler<ActionEvent>() {
         @Override
         public void handle(ActionEvent event) {
+
             animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+            currentOptVarValueLbl.setText("END");
         }
     });
 
@@ -121,6 +128,7 @@ public class FirstGraph extends Application {
 
 
         final Slider xZoomSlider = new Slider(1, 100, originalXAxisUpperBound);
+        xZoomSlider.setCursor(Cursor.HAND);
         xZoomSlider.setOrientation(Orientation.VERTICAL);
         xZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
@@ -147,11 +155,14 @@ public class FirstGraph extends Application {
                 double newUpperBound = logNewValue + pannedMidpoint;
 
                 xZoom(lineChart, newLowerBound, newUpperBound);
+
+                lineChart.setCursor(Cursor.OPEN_HAND);
             }
         });
 
 
         final Slider yZoomSlider = new Slider(1, 100, originalYAxisUpperBound);
+        yZoomSlider.setCursor(Cursor.HAND);
         yZoomSlider.setOrientation(Orientation.VERTICAL);
         yZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
@@ -192,6 +203,7 @@ public class FirstGraph extends Application {
                 else {
                     yZoom(lineChart, newLowerBound, newUpperBound);
                 }
+                lineChart.setCursor(Cursor.OPEN_HAND);
 
 
 
@@ -201,6 +213,7 @@ public class FirstGraph extends Application {
 
         // button for resetting the graph to largest.
         Button resetGraphButton = new Button("Reset Graph");
+        resetGraphButton.setCursor(Cursor.HAND);
         resetGraphButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
@@ -213,36 +226,68 @@ public class FirstGraph extends Application {
                 // updating sliders to match
                 xZoomSlider.setValue(originalXAxisUpperBound);
                 yZoomSlider.setValue(originalYAxisUpperBound);
+                lineChart.setCursor(Cursor.DEFAULT);
             }
         });
 
         Button playAnimationButton = new Button("Play");
+        playAnimationButton.setCursor(Cursor.HAND);
         playAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
-                avmfAnimationSequence.play();
-                System.out.println(avmfAnimationSequence.getCuePoints());
-                animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
-                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
+                    avmfAnimationSequence.play();
+                    System.out.println(avmfAnimationSequence.getCuePoints());
+                    animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
+                    animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                }
+
             }
         });
 
         Button pauseAnimationButton  = new Button("Pause");
+        pauseAnimationButton.setCursor(Cursor.HAND);
         pauseAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 avmfAnimationSequence.pause();
                 animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+
+
             }
         });
 
         Button restartAnimationButton  = new Button("Restart");
+        restartAnimationButton.setCursor(Cursor.HAND);
         restartAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 avmfAnimationSequence.playFromStart();
                 animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+
+
+                // set tool tips on all nodes.
+                ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                // get series from chart
+                for (XYChart.Series series : chartData){
+                    ObservableList<XYChart.Data> theData = series.getData();
+
+                    // remove tooltips for all datapoints of series
+                    for (XYChart.Data dataPoint : theData){
+                        Node dataPointNode = dataPoint.getNode();
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                        hackTooltipStartTiming(tooltip);
+                        Tooltip.uninstall(dataPointNode,tooltip);
+
+                        // set cursor on datapoints back to default
+                        dataPointNode.setCursor(Cursor.DEFAULT);
+
+                    }
+                }
+
+
             }
         });
 
         Button decreaseRateButton  = new Button("Decrease Rate");
+        decreaseRateButton.setCursor(Cursor.HAND);
         decreaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 double currentRate = avmfAnimationSequence.getCurrentRate();
@@ -256,6 +301,7 @@ public class FirstGraph extends Application {
         });
 
         Button increaseRateButton  = new Button("Increase Rate");
+        increaseRateButton.setCursor(Cursor.HAND);
         increaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 double currentRate = avmfAnimationSequence.getCurrentRate();
@@ -269,61 +315,84 @@ public class FirstGraph extends Application {
         });
 
         Button jumpToEndButton  = new Button("Jump To End");
+        jumpToEndButton.setCursor(Cursor.HAND);
         jumpToEndButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
-            avmfAnimationSequence.jumpTo("end");
-            animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
+                    // jump to end and update labels
+                    avmfAnimationSequence.play();
+                    avmfAnimationSequence.jumpTo("end");
+                    animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                    currentAnimatedVariable = noOfVariables;
+                    currentOptVarValueLbl.setText("END");
 
-            // set tool tips on all nodes.
-            ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
-                // get series from chart
-               for (XYChart.Series series : chartData){
-                   ObservableList<XYChart.Data> theData = series.getData();
 
-                   // set tooltips for all datapoints of series
-                   for (XYChart.Data dataPoint : theData){
-                       Node dataPointNode = dataPoint.getNode();
-                       final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
-                       hackTooltipStartTiming(tooltip);
-                       Tooltip.install(dataPointNode,tooltip);
 
-                   }
-               }
+
+                    // set tool tips on all nodes.
+                    ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                    // get series from chart
+                    for (XYChart.Series series : chartData){
+                        ObservableList<XYChart.Data> theData = series.getData();
+
+                        // set tooltips for all datapoints of series
+                        for (XYChart.Data dataPoint : theData){
+                            Node dataPointNode = dataPoint.getNode();
+                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                            hackTooltipStartTiming(tooltip);
+                            Tooltip.install(dataPointNode,tooltip);
+
+                            // setting crosshair cursor for datapoint nodes - guides user when using tooltips
+                            dataPointNode.setCursor(Cursor.CROSSHAIR);
+
+                        }
+                    }
+
+                }
+
 
             }
         });
 
 
         Button previousVariableButton  = new Button("Previous Variable");
+        previousVariableButton.setCursor(Cursor.HAND);
         previousVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
-                if (currentAnimatedVariable > 0) {
-                    currentAnimatedVariable--;
-                    currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
-                }
-                System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
-                avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
+                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
+                    if (currentAnimatedVariable > 0) {
+                        currentAnimatedVariable--;
+                        currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
+                    }
+                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
+                    avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
 
 
-                // remove tooltips from series now hidden.
-                ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                    // remove tooltips from series now hidden.
+                    ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
 
 
-                // get from chart the series to remove tooltips from.
-                // remove tooltips from previously animated series and currently animated series.
-                for (int i = currentAnimatedVariable; i <= currentAnimatedVariable + 1; i++ ){
-                    XYChart.Series series = chartData.get(i);
-                    ObservableList<XYChart.Data> theData = series.getData();
+                    // get from chart the series to remove tooltips from.
+                    // remove tooltips from previously animated series and currently animated series.
+                    for (int i = currentAnimatedVariable; i <= currentAnimatedVariable + 1; i++ ){
+                        XYChart.Series series = chartData.get(i);
+                        ObservableList<XYChart.Data> theData = series.getData();
 
-                    // uninstall tooltips for all datapoints of series
-                    for (XYChart.Data dataPoint : theData){
-                        Node dataPointNode = dataPoint.getNode();
-                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
-                        hackTooltipStartTiming(tooltip);
-                        Tooltip.uninstall(dataPointNode,tooltip);
+                        // uninstall tooltips for all datapoints of series
+                        for (XYChart.Data dataPoint : theData){
+                            Node dataPointNode = dataPoint.getNode();
+                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                            hackTooltipStartTiming(tooltip);
+                            Tooltip.uninstall(dataPointNode,tooltip);
 
+                            // removes crosshair cursor for hidden nodes.
+                            dataPointNode.setCursor(Cursor.DEFAULT);
+
+                        }
                     }
                 }
+
+
 
 
 
@@ -332,32 +401,38 @@ public class FirstGraph extends Application {
         });
 
         Button nextVariableButton  = new Button("Next Variable");
+        nextVariableButton.setCursor(Cursor.HAND);
         nextVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
-                // if possible increment index of current animated variable
-                if (currentAnimatedVariable < noOfVariables - 1) {
-                    currentAnimatedVariable++;
-                    currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
+                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
+                    // if possible increment index of current animated variable
+                    if (currentAnimatedVariable < noOfVariables - 1) {
+                        currentAnimatedVariable++;
+                        currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
+                    }
+                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
+                    // jump to cure point of next variable.
+                    avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
+
+
+                    // add tooltips to series before the currently animated one
+                    ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
+                    XYChart.Series series = chartData.get(currentAnimatedVariable-1);
+                    ObservableList<XYChart.Data> theData = series.getData();
+
+                    // set tooltips for all datapoints of series
+                    for (XYChart.Data dataPoint : theData){
+                        Node dataPointNode = dataPoint.getNode();
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                        hackTooltipStartTiming(tooltip);
+                        Tooltip.install(dataPointNode,tooltip);
+
+                        // setting crosshair cursor for datapoint nodes - guides user when using tooltips
+                        dataPointNode.setCursor(Cursor.CROSSHAIR);
+
+                    }
+
                 }
-                System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
-                // jump to cure point of next variable.
-                avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
-
-
-                // add tooltips to series before the currently animated one
-                ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
-                XYChart.Series series = chartData.get(currentAnimatedVariable-1);
-                ObservableList<XYChart.Data> theData = series.getData();
-
-                // set tooltips for all datapoints of series
-                for (XYChart.Data dataPoint : theData){
-                    Node dataPointNode = dataPoint.getNode();
-                    final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
-                    hackTooltipStartTiming(tooltip);
-                    Tooltip.install(dataPointNode,tooltip);
-
-                }
-
 
 
             }
@@ -401,9 +476,9 @@ public class FirstGraph extends Application {
 
         animationControl.getChildren().addAll(
                 animationControlLbl,
+                restartAnimationButton,
                 playAnimationButton,
                 pauseAnimationButton,
-                restartAnimationButton,
                 decreaseRateButton,
                 increaseRateButton,
                 previousVariableButton,
@@ -498,6 +573,8 @@ public class FirstGraph extends Application {
         yZoomSlider.setMax(originalYAxisUpperBound);
         yZoomSlider.setValue(originalYAxisUpperBound);
         yZoomSlider.setMajorTickUnit(originalYAxisUpperBound);// line to fudge the showing of no major tick marks. Can't easily show them because they don't correspond to logarithmic zoom
+
+        lineChart.setCursor(Cursor.DEFAULT);
 
 
     }
@@ -617,6 +694,8 @@ public class FirstGraph extends Application {
                         final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
                         hackTooltipStartTiming(tooltip);
                         Tooltip.install(dataPointNode,tooltip);
+
+                        dataPointNode.setCursor(Cursor.CROSSHAIR);
                     }
                 });
 
@@ -700,6 +779,43 @@ public class FirstGraph extends Application {
 
             }
         });
+
+
+        // code for adding event handlers to legend items, code adapted from here: https://stackoverflow.com/questions/44956955/javafx-use-chart-legend-to-toggle-show-hide-series-possible
+        for (Node n : lineChart.getChildrenUnmodifiable()) {
+            if (n instanceof Legend) {
+                Legend l = (Legend) n;
+                for (final Legend.LegendItem li : l.getItems()) {
+                    for (final XYChart.Series<Number, Number> s : lineChart.getData()) {
+                        if (s.getName().equals(li.getText())) {
+                            li.getSymbol().setCursor(Cursor.HAND); // Hint user that legend symbol is clickable
+                            li.getSymbol().setOnMouseClicked(new EventHandler<MouseEvent>() {
+                                @Override
+                                public void handle(MouseEvent event) {
+
+                                        // toggle greyed out symbol to show user toggle status.
+                                        if (li.getSymbol().getOpacity() == 1){
+                                            li.getSymbol().setOpacity(0.3);
+                                        }
+                                        else {
+                                            li.getSymbol().setOpacity(1);
+                                        }
+
+
+                                        s.getNode().setVisible(!s.getNode().isVisible()); // Toggle visibility of line
+                                        for (XYChart.Data<Number, Number> d : s.getData()) {
+                                            if (d.getNode() != null) {
+                                                d.getNode().setVisible(s.getNode().isVisible()); // Toggle visibility of every node in the series
+                                            }
+                                        }
+
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
 
         return lineChart;
     }
