@@ -951,17 +951,18 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
     // for zooming x axis
     public void xZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
-//        System.out.println(xAxis.getLowerBound()); // debugging
 
-        xAxis.setLowerBound(lowerBound);
-        xAxis.setUpperBound(upperBound);
+        // Conditional sorts out maximum zoom, should not be closer than a range of 2 or issues appear.
+        if (Math.abs(upperBound - lowerBound) > 2){
+            xAxis.setLowerBound(lowerBound);
+            xAxis.setUpperBound(upperBound);
+        }
 
     }
 
     // for zooming y axis
     public void yZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
-//        System.out.println(yAxis.getLowerBound()); // debugging
 
         yAxis.setLowerBound(lowerBound);
         yAxis.setUpperBound(upperBound);
