@@ -17,7 +17,6 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import com.sun.javafx.charts.Legend;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseButton;
 
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
@@ -39,7 +38,6 @@ import javafx.event.EventHandler;
 
 
 import javafx.util.Duration;
-import org.avmframework.examples.inputdatageneration.line.Line;
 
 
 import java.io.File;
@@ -212,9 +210,9 @@ public class FirstGraph extends Application {
         });
 
         // button for resetting the graph to largest.
-        Button resetGraphButton = new Button("Reset Graph");
-        resetGraphButton.setCursor(Cursor.HAND);
-        resetGraphButton.setOnAction(new EventHandler<ActionEvent>() {
+        Button resetZoomButton = new Button("Reset Zoom");
+        resetZoomButton.setCursor(Cursor.HAND);
+        resetZoomButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
                 final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
@@ -255,10 +253,11 @@ public class FirstGraph extends Application {
             }
         });
 
-        Button restartAnimationButton  = new Button("Restart");
+        final Button restartAnimationButton  = new Button("Start");
         restartAnimationButton.setCursor(Cursor.HAND);
         restartAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                restartAnimationButton.setText("Restart");
                 avmfAnimationSequence.playFromStart();
                 animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
 
@@ -466,8 +465,8 @@ public class FirstGraph extends Application {
         zoomControl.add(yZoomLbl,1,0);
         zoomControl.add(xZoomSlider, 0,1);
         zoomControl.add(yZoomSlider,1,1);
-        zoomControl.add(resetGraphButton,0,2,2,1);
-        GridPane.setHalignment(resetGraphButton, HPos.CENTER);
+        zoomControl.add(resetZoomButton,0,2,2,1);
+        GridPane.setHalignment(resetZoomButton, HPos.CENTER);
 
 
         HBox animationControl = new HBox();
@@ -738,22 +737,22 @@ public class FirstGraph extends Application {
 
 
                 // both axis pans
-                if (clickPointX < newX && clickPointY < newY){
-                    System.out.println("Down Right");
-                    panGraph(lineChart,XDirection.LEFT, YDirection.DOWN);
-                }
-                else if(clickPointX > newX && clickPointY < newY){
-                    System.out.println("Down Left");
-                    panGraph(lineChart,XDirection.RIGHT, YDirection.DOWN);
-                }
-                else if(clickPointX < newX && clickPointY > newY){
-                    System.out.println("Up Right");
-                    panGraph(lineChart, XDirection.LEFT, YDirection.UP);
-                }
-                else if(clickPointX > newX && clickPointY > newY){
-                    System.out.println("Up Left");
-                    panGraph(lineChart, XDirection.RIGHT, YDirection.UP);
-                }
+//                if (clickPointX < newX && clickPointY < newY){
+//                    System.out.println("Down Right");
+//                    panGraph(lineChart,XDirection.LEFT, YDirection.DOWN);
+//                }
+//                else if(clickPointX > newX && clickPointY < newY){
+//                    System.out.println("Down Left");
+//                    panGraph(lineChart,XDirection.RIGHT, YDirection.DOWN);
+//                }
+//                else if(clickPointX < newX && clickPointY > newY){
+//                    System.out.println("Up Right");
+//                    panGraph(lineChart, XDirection.LEFT, YDirection.UP);
+//                }
+//                else if(clickPointX > newX && clickPointY > newY){
+//                    System.out.println("Up Left");
+//                    panGraph(lineChart, XDirection.RIGHT, YDirection.UP);
+//                }
 
                 // single axis pans
                 if(clickPointY > newY){
@@ -858,7 +857,7 @@ public class FirstGraph extends Application {
     };
 
 
-final double PAN_SENSITIVITY = 250.0; // higher = more sensitive -- might need to split into x and y? wait until graph correct size.
+final double PAN_SENSITIVITY = 50; // higher = less speed -- might need to split into x and y? wait until graph correct size.
 
 private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection, YDirection yDirection) {
     final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
@@ -873,15 +872,9 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
     // setup for y pans
     double yCurrentLowerBound = yAxis.getLowerBound();
     double yCurrentUpperBound = yAxis.getUpperBound();
-    double yWidth = Math.abs(yCurrentUpperBound) + Math.abs(yCurrentLowerBound);
-    double yPanStep = 0.0;
-    // crude decision -- could be improved
-    if (yWidth <= 25000){
-         yPanStep = yWidth / (PAN_SENSITIVITY * 25); // still seems to sensitive at higher zooms.
-    }
-    else{
-         yPanStep = yWidth / (PAN_SENSITIVITY); // still seems to sensitive at higher zooms.
-    }
+    double yWidth = Math.abs(yCurrentUpperBound - yCurrentLowerBound);
+    double yPanStep = yWidth / (PAN_SENSITIVITY); // still seems to sensitive at higher zooms.
+
 
     // X axis panning right
     if(xCurrentUpperBound < originalXAxisUpperBound){
@@ -952,8 +945,10 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
     public void xZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
 
+        final double MINNIMUM_ZOOM_RANGE = 2;
+
         // Conditional sorts out maximum zoom, should not be closer than a range of 2 or issues appear.
-        if (Math.abs(upperBound - lowerBound) > 2){
+        if (Math.abs(upperBound - lowerBound) > MINNIMUM_ZOOM_RANGE){
             xAxis.setLowerBound(lowerBound);
             xAxis.setUpperBound(upperBound);
         }
@@ -964,8 +959,12 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
     public void yZoom(LineChart<Number,Number> lineChart, double lowerBound, double upperBound){
         final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
 
-        yAxis.setLowerBound(lowerBound);
-        yAxis.setUpperBound(upperBound);
+        final double MINNIMUM_ZOOM_RANGE = 2;
+
+        if (Math.abs(upperBound - lowerBound) > MINNIMUM_ZOOM_RANGE){
+            yAxis.setLowerBound(lowerBound);
+            yAxis.setUpperBound(upperBound);
+        }
 
     }
 
