@@ -73,7 +73,7 @@ public class AllZeros {
         AVM avm = new AVM(localSearch, terminationPolicy, initializer);
 
         // perform the search
-        Monitor monitor = avm.search(vector, objFun, true);
+        Monitor monitor = avm.search(vector, objFun, true, SEARCH_NAME);
 
         // output the results
         System.out.println("Best solution: " + monitor.getBestVector());

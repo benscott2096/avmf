@@ -27,6 +27,8 @@ public class Monitor {
      */
     protected TerminationPolicy tp;
 
+    protected String searchName = "";
+
     /**
      * The best objective value observed so far during hte search.
      */
@@ -105,8 +107,9 @@ public class Monitor {
     }
 
     // constructor 2, overloaded to enable optional setting of useVisualiser to true.
-    public Monitor(TerminationPolicy tp, boolean useVisualiser) {
+    public Monitor(TerminationPolicy tp, boolean useVisualiser, String searchName) {
         this.tp = tp;
+        this.searchName = searchName;
         bestObjVal = null;
         bestVector = null;
         numEvaluations = 0;
@@ -198,7 +201,7 @@ public class Monitor {
 
 
     public void recordKeyPair(Vector vector, ObjectiveValue objVal, int iteration) throws TerminationException {
-        System.out.println("vector: " + vector + ", objVal: " + objVal);
+//        System.out.println("vector: " + vector + ", objVal: " + objVal);
 
         runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration));
         // handle writing variables and objective values to file here -- BSS
@@ -214,11 +217,24 @@ public class Monitor {
 
     public void observeTermination() {
         endTime = System.currentTimeMillis();
+
+        // adding header data to runlog
+        runLog.addHeader(getBestObjVal(), getBestVector(), getNumEvaluations(), getNumUniqueEvaluations(), getNumRestarts(), getRunningTime());
+        runLog.getHeader().addSearchName(searchName);
+        runLog.getHeader().addTerminationPolicy(tp.getTerminateOnOptimal(), tp.getMaxEvaluations(), tp.getMaxRestarts(), tp.getRunningTime());
+
+
+
+//        System.out.println("in monitor: " + runLog.getHeader().toString());
+
         try {
 
+
+
+
+            // file handling
             System.out.println(generateFileName());
 
-//            fileWriter.close();
 
             GsonBuilder builder = new GsonBuilder();
             Gson gson = builder.create();

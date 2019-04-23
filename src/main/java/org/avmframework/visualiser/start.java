@@ -63,6 +63,8 @@ public class start {
         AvmfRunLog runLog1 = gson.fromJson(bufferedReader, AvmfRunLog.class);
         runLog = runLog1;
 
+        System.out.println("HEADER");
+        System.out.println(runLog.getHeader());
     }
 
 

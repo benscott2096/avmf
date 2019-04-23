@@ -14,6 +14,7 @@ import org.avmframework.objective.NumericObjectiveValue;
 import org.avmframework.objective.ObjectiveFunction;
 import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.StringVariable;
+import org.avmframework.visualiser.start;
 
 import static org.avmframework.variable.StringVariable.createPrintableASCIICharacterVariable;
 
@@ -81,7 +82,7 @@ public class StringOptimization {
         AVM avm = new AVM(localSearch, terminationPolicy, initializer);
 
         // perform the search
-        Monitor monitor = avm.search(vector, objFun);
+        Monitor monitor = avm.search(vector, objFun, true, SEARCH_NAME);
 
         // output the results
         System.out.println("Best solution: " + monitor.getBestVector().getVariable(0));
@@ -91,5 +92,6 @@ public class StringOptimization {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
+        start.launchVisualiser(Monitor.getFileName());
     }
 }

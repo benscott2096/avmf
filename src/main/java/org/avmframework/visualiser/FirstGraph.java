@@ -29,6 +29,8 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import java.lang.reflect.Field;
+import java.text.DecimalFormat;
+import javafx.scene.text.Font;
 
 import javafx.scene.control.Slider;
 import javafx.beans.value.ChangeListener;
@@ -38,10 +40,12 @@ import javafx.event.EventHandler;
 
 
 import javafx.util.Duration;
+import org.avmframework.Monitor;
 
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 
 
@@ -75,6 +79,8 @@ public class FirstGraph extends Application {
     private int noOfVariables;
 
 
+
+
     // the avmfAnimationSequence
     private SequentialTransition avmfAnimationSequence = new SequentialTransition();
     final private Label currentOptVarValueLbl = new Label(); // initialised empty
@@ -86,7 +92,7 @@ public class FirstGraph extends Application {
 
     @Override public void start(final Stage stage) {
 
-        String fileName = "Placeholder";
+        String fileName = Monitor.getFileName();
 
         // handles loading in a file using file chooser if visualiser not implemented in AVMf... todo: reword
         if (!start.fileLoaded){
@@ -100,7 +106,7 @@ public class FirstGraph extends Application {
             try{
                 start.loadRunLog(filePath);
                 System.out.println("File Loaded");
-                System.out.println(start.getDataPairs());
+//                System.out.println(start.getDataPairs());
 
             }
             catch(FileNotFoundException e){
@@ -317,6 +323,9 @@ public class FirstGraph extends Application {
         jumpToEndButton.setCursor(Cursor.HAND);
         jumpToEndButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                DecimalFormat df = new DecimalFormat("#.####");
+                df.setRoundingMode(RoundingMode.HALF_EVEN);
+
                 if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
                     // jump to end and update labels
                     avmfAnimationSequence.play();
@@ -337,7 +346,7 @@ public class FirstGraph extends Application {
                         // set tooltips for all datapoints of series
                         for (XYChart.Data dataPoint : theData){
                             Node dataPointNode = dataPoint.getNode();
-                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + df.format(dataPoint.getYValue()));
                             hackTooltipStartTiming(tooltip);
                             Tooltip.install(dataPointNode,tooltip);
 
@@ -358,6 +367,9 @@ public class FirstGraph extends Application {
         previousVariableButton.setCursor(Cursor.HAND);
         previousVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                DecimalFormat df = new DecimalFormat("#.####");
+                df.setRoundingMode(RoundingMode.HALF_EVEN);
+
                 if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
                     if (currentAnimatedVariable > 0) {
                         currentAnimatedVariable--;
@@ -380,7 +392,7 @@ public class FirstGraph extends Application {
                         // uninstall tooltips for all datapoints of series
                         for (XYChart.Data dataPoint : theData){
                             Node dataPointNode = dataPoint.getNode();
-                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                            final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + df.format(dataPoint.getYValue()));
                             hackTooltipStartTiming(tooltip);
                             Tooltip.uninstall(dataPointNode,tooltip);
 
@@ -403,6 +415,9 @@ public class FirstGraph extends Application {
         nextVariableButton.setCursor(Cursor.HAND);
         nextVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                DecimalFormat df = new DecimalFormat("#.####");
+                df.setRoundingMode(RoundingMode.HALF_EVEN);
+
                 if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
                     // if possible increment index of current animated variable
                     if (currentAnimatedVariable < noOfVariables - 1) {
@@ -422,7 +437,7 @@ public class FirstGraph extends Application {
                     // set tooltips for all datapoints of series
                     for (XYChart.Data dataPoint : theData){
                         Node dataPointNode = dataPoint.getNode();
-                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + df.format(dataPoint.getYValue()));
                         hackTooltipStartTiming(tooltip);
                         Tooltip.install(dataPointNode,tooltip);
 
@@ -453,6 +468,60 @@ public class FirstGraph extends Application {
 
         Label variableValueLbl = new Label("Variable Value: ");
         Label variableFitnessLbl = new Label("Variable Fitness");
+
+        // header labels
+        Label searchNameLbl = new Label("Search Type:"); // might not use
+        Label runningTimeLbl = new Label("Running Time:");
+        Label bestObjValLbl = new Label("Best Objective Value:");
+        Label bestVectorLbl = new Label("Best Vector:");
+        Label numEvaluationsLbl = new Label("No. Evaluations:");
+        Label numUniqueEvaluationsLbl = new Label("No. Unique Evaluations:");
+        Label numRestartsLbl = new Label("No. Restarts:");
+        // header data labels
+        Label dataSearchNameLbl = new Label(start.runLog.getHeader().searchName); // might not use
+        Label dataRunningTimeLbl = new Label(String.valueOf(start.runLog.getHeader().runningTime + "ms"));
+        Label dataBestObjValLbl = new Label(String.valueOf(start.runLog.getHeader().bestObjVal));
+        Label dataBestVectorLbl = new Label(String.valueOf(start.runLog.getHeader().bestVector));
+        Label dataNumEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().numEvaluations));
+        Label dataNumUniqueEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().numUniqueEvaluations));
+        Label dataNumRestartsLbl = new Label(String.valueOf(start.runLog.getHeader().numRestarts));
+
+
+        // termination policy labels
+        Label terminationPoilicyTitle = new Label("Termination Policy");
+        Label terminateOnOptimalLbl = new Label("Terminate On Optimal:");
+        Label maxEvaluationsLbl = new Label("Max Evaluations:");
+        Label maxRestartsLbl = new Label("Max Restarts:");
+        Label tpRunningTimeLbl = new Label("Max Running Time:");
+        // termination policy labels
+        Label dataTerminateOnOptimalLbl = new Label(String.valueOf(start.runLog.getHeader().terminateOnOptimal));
+        //
+
+        Label dataMaxEvaluationsLbl, dataMaxRestartsLbl, dataTpRunningTimeLbl;
+
+
+        if (start.runLog.getHeader().maxEvaluations == -1 ){
+            dataMaxEvaluationsLbl = new Label("No Limit");
+        }
+        else{
+            dataMaxEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().maxEvaluations));
+        }
+
+        if(start.runLog.getHeader().maxRestarts == -1 ){
+            dataMaxRestartsLbl = new Label("No Limit");
+        }
+        else{
+            dataMaxRestartsLbl = new Label(String.valueOf(start.runLog.getHeader().maxRestarts));
+        }
+
+        if(start.runLog.getHeader().tpRunningTime == -1){
+            dataTpRunningTimeLbl = new Label("No Limit");
+        }
+        else{
+            dataTpRunningTimeLbl = new Label(String.valueOf(start.runLog.getHeader().tpRunningTime) + "ms");
+        }
+
+
 
 
 
@@ -487,9 +556,54 @@ public class FirstGraph extends Application {
 
         animationControlLbl.setAlignment(Pos.TOP_CENTER);
 
+        // header
         GridPane headerArea = new GridPane();
-        headerArea.add(headerTitle,1,1, 1 , 2);
-        GridPane.setHalignment(headerTitle, HPos.CENTER);
+        headerArea.setPadding(new Insets(10, 10, 10, 10));
+        GridPane.setHalignment(dataSearchNameLbl, HPos.CENTER);
+        GridPane.setHalignment(terminationPoilicyTitle, HPos.CENTER);
+        GridPane.setHalignment(dataBestVectorLbl, HPos.LEFT);
+
+
+        headerArea.add(dataSearchNameLbl,0,0, 2, 1);
+
+        headerArea.add(runningTimeLbl,0,1);
+        headerArea.add(dataRunningTimeLbl,1,1);
+
+        headerArea.add(bestObjValLbl,0,2);
+        headerArea.add(dataBestObjValLbl,1,2);
+
+        headerArea.add(bestVectorLbl,0,3);
+//        headerArea.add(dataBestVectorLbl,0,4, 2, 1);
+
+        headerArea.add(numEvaluationsLbl,0,5);
+        headerArea.add(dataNumEvaluationsLbl,1,5);
+
+        headerArea.add(numUniqueEvaluationsLbl,0,6);
+        headerArea.add(dataNumUniqueEvaluationsLbl,1,6);
+
+        headerArea.add(numRestartsLbl,0,7);
+        headerArea.add(dataNumRestartsLbl,1,7);
+
+        // termination policy area
+        headerArea.add(terminationPoilicyTitle,0,8, 2 , 1);
+
+        headerArea.add(terminateOnOptimalLbl,0,9);
+        headerArea.add(dataTerminateOnOptimalLbl,1,9);
+
+        headerArea.add(maxEvaluationsLbl,0,10);
+        headerArea.add(dataMaxEvaluationsLbl,1,10);
+
+        headerArea.add(maxRestartsLbl,0,11);
+        headerArea.add(dataMaxRestartsLbl,1,11);
+
+        headerArea.add(tpRunningTimeLbl,0,12);
+        headerArea.add(dataTpRunningTimeLbl,1,12);
+
+
+
+
+
+
 
         GridPane reportingArea = new GridPane();
         reportingArea.add(currentOptVarLbl,0,0);
@@ -632,12 +746,15 @@ public class FirstGraph extends Application {
         final LineChart<Number, Number> lineChart =
                 new LineChart<Number, Number>(xAxis, yAxis);
 
-        lineChart.setTitle("Test Line Graph");
+        lineChart.setTitle("Optimising to best vector: " + start.runLog.getHeader().bestVector); // todo: change!!!
+//lineChart.t().set(Font.font(15));
+        Label chartTitle = (Label)lineChart.lookup(".chart-title");
+        chartTitle.setFont(Font.font(11));
+        chartTitle.setWrapText(true);
 
 
-
-        // setting up and adding series for all vector variables to chart? also adding animation keyframes.
-        for (int variableNo = 0; variableNo < dataPairs.get(0).getVector().size(); variableNo++) {
+        // setting up and adding series for all vector variables to chart? also adding animation keyframes. Uses final set of pairs for index to make compatible with variable length string variables.
+        for (int variableNo = 0; variableNo < dataPairs.get(dataPairs.size()-1).getVector().size(); variableNo++) {
             // setting up series
             XYChart.Series series = setUpSeries(dataPairs);
             lineChart.getData().add(series);
@@ -686,11 +803,17 @@ public class FirstGraph extends Application {
                 dropPoint.setOnFinished(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
+
+                        DecimalFormat df = new DecimalFormat("#.####");
+                        df.setRoundingMode(RoundingMode.HALF_EVEN);
+
                         pairVariableValueLbL.setText(String.valueOf(dataPoint.getXValue()));
-                        pairVariableFitnessLbl.setText(String.valueOf(dataPoint.getYValue()));
+                        pairVariableFitnessLbl.setText(String.valueOf(df.format(dataPoint.getYValue())));
 
                         // setting tooltip on data points
-                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + dataPoint.getYValue());
+
+
+                        final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + df.format(dataPoint.getYValue()));
                         hackTooltipStartTiming(tooltip);
                         Tooltip.install(dataPointNode,tooltip);
 
@@ -736,7 +859,7 @@ public class FirstGraph extends Application {
                 double newY = event.getY();
 
 
-                // both axis pans
+                // both axis pans... think this is less intuutive with the cursor open handed.
 //                if (clickPointX < newX && clickPointY < newY){
 //                    System.out.println("Down Right");
 //                    panGraph(lineChart,XDirection.LEFT, YDirection.DOWN);
@@ -927,12 +1050,32 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
     private XYChart.Series setUpSeries(ArrayList<AvmfIterationOutput> dataPairs){
         XYChart.Series series = new XYChart.Series();
         series.setName("Variable " + currentVariable);
+        System.out.println("making series for variable " + currentVariable);
+        System.out.println(dataPairs.get(dataPairs.size()-1).getVector().size());
 
-        for (AvmfIterationOutput pair : dataPairs){
-            if ((pair.getIteration() == currentVariable)){
-                ObservableList seriesData = series.getData();
-                // add the data point to series
-                seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable -1), pair.getObjVal()));
+
+
+        // todo: introduce final variable(s) after
+        if ((currentVariable - 1) > dataPairs.get(0).getVector().size()) {
+            System.out.println("Alternative series write");
+            for (AvmfIterationOutput pair : dataPairs) {
+                if ((pair.getIteration() == currentVariable && pair.getVector().size() > currentVariable -1)) {
+                    System.out.print("writing it!");
+                    ObservableList seriesData = series.getData();
+                    // add the data point to series
+                    seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
+                }
+            }
+
+
+        }
+        else{
+            for (AvmfIterationOutput pair : dataPairs) {
+                if ((pair.getIteration() == currentVariable)) {
+                    ObservableList seriesData = series.getData();
+                    // add the data point to series
+                    seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
+                }
             }
         }
 

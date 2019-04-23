@@ -9,6 +9,26 @@ public class TerminationPolicy {
     protected int maxRestarts;
     protected long runningTime;
 
+
+    // Getters needed for reporting in the visualiser
+    public boolean getTerminateOnOptimal(){
+        return terminateOnOptimal;
+    }
+
+    public int getMaxEvaluations(){
+        return maxEvaluations;
+    }
+
+    public int getMaxRestarts() {
+        return maxRestarts;
+    }
+
+    public long getRunningTime() {
+        return runningTime;
+    }
+
+
+
     public static TerminationPolicy createMaxEvaluationsTerminationPolicy(int maxEvaluations) {
         return new TerminationPolicy(true, maxEvaluations, NO_LIMIT, NO_LIMIT);
     }

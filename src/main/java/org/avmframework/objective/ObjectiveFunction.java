@@ -33,8 +33,6 @@ public abstract class ObjectiveFunction {
         monitor.observeVector(); // marker -- might need to do something like this -- BSS
 
 
-        // TODO: think im going to need a fresh monitor function for recording data of all vectors considered for each restart.
-
 
         // If vector seen before, return previously calculated objective value
         if (useCache && previousVals.containsKey(vector)) {

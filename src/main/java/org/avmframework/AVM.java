@@ -120,9 +120,9 @@ public class AVM {
         return monitor;
     }
 
-    public Monitor search(Vector vector, ObjectiveFunction objFun, boolean useVisualiser) {
+    public Monitor search(Vector vector, ObjectiveFunction objFun, boolean useVisualiser, String searchName) {
         // set up the monitor
-        this.monitor = new Monitor(tp, useVisualiser); // only line that differs to search method 1 todo: something about duplicated code?
+        this.monitor = new Monitor(tp, useVisualiser, searchName); // only line that differs to search method 1 todo: something about duplicated code?
 
         // set up the objective function
         this.objFun = objFun;
