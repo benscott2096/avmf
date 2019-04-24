@@ -203,7 +203,7 @@ public class Monitor {
     public void recordKeyPair(Vector vector, ObjectiveValue objVal, int iteration) throws TerminationException {
 //        System.out.println("vector: " + vector + ", objVal: " + objVal);
 
-        runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration));
+        runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration, numRestarts));
         // handle writing variables and objective values to file here -- BSS
     }
 

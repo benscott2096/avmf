@@ -74,6 +74,7 @@ public class FirstGraph extends Application {
 
     // used to keep track of what variable is having its series set up.
     private int currentVariable = 1;
+    private boolean currentVarFinished = false;
     // variable to keeping track of which vector variable is currently being animated
     private int currentAnimatedVariable = 0; // first landscape cuepoint has label 0
     private int noOfVariables;
@@ -1055,7 +1056,7 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
 
 
 
-        // todo: introduce final variable(s) after
+        // todo: introduce final variable(s) after -- attempt
         if ((currentVariable - 1) > dataPairs.get(0).getVector().size()) {
             System.out.println("Alternative series write");
             for (AvmfIterationOutput pair : dataPairs) {
@@ -1070,16 +1071,27 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
 
         }
         else{
+            int previousIteration = 1;
             for (AvmfIterationOutput pair : dataPairs) {
-                if ((pair.getIteration() == currentVariable)) {
+
+                // only add to series if current variable still has pairs to add. This conditional filters out the extra wrap round at the end of an AVM run.
+                if ((pair.getIteration() == currentVariable && pair.getRestartNo() == 0) && !currentVarFinished) {
                     ObservableList seriesData = series.getData();
                     // add the data point to series
                     seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
                 }
+                else if (pair.getIteration() != currentVariable && previousIteration == currentVariable){
+                    System.out.println("Series finished for var");
+                    currentVarFinished = true;
+                }
+                previousIteration = pair.getIteration();
             }
         }
 
+        System.out.println(series.getData());
+        // updating current variable stats
         currentVariable++;
+        currentVarFinished = false;
         return series;
     }
 

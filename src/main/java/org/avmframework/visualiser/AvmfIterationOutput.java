@@ -15,6 +15,8 @@ public class AvmfIterationOutput {
 
     private int iteration = 0;
 
+    private int restartNo = 0;
+
 
 
 
@@ -39,8 +41,10 @@ public class AvmfIterationOutput {
 
     public int getIteration(){ return iteration;}
 
+    public int getRestartNo(){ return restartNo;}
 
-    public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue, int iteration){
+
+    public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue, int iteration, int restartNo){
 
 
 //        System.out.println("String processing");
@@ -86,6 +90,8 @@ public class AvmfIterationOutput {
         this.objectiveValue = Double.valueOf(objectiveValue.toString());
 
         this.iteration = iteration;
+
+        this.restartNo = restartNo;
     }
 
 }
