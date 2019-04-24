@@ -47,7 +47,7 @@ public class AvmfIterationOutput {
 //        System.out.println(vector.getVariable(0));
 //        System.out.println(vector.getVariable(0).getClass());
 
-        String var = vector.toString();
+//        String var = vector.toString();
 //        System.out.println(var);
 //        System.out.println(var.length());
 
@@ -61,6 +61,9 @@ public class AvmfIterationOutput {
 
 
         if (vector.getVariable(0) instanceof StringVariable){
+
+            System.out.println("String add");
+
             String stringOfChars = ((StringVariable) vector.getVariable(0)).asString();
 
             System.out.println(stringOfChars);
@@ -71,8 +74,11 @@ public class AvmfIterationOutput {
 
         }
         else{
+            System.out.println("normal add");
             for(int i = 0; i < vector.size(); i++ ) {
-                this.vector.add((double) i);
+//                this.vector.add((double) i);
+                this.vector.add(Double.valueOf(vector.getVariable(i).toString()));
+
             }
         }
 
