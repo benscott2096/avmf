@@ -9,48 +9,44 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
-public class start {
+public class Launcher {
 
     protected static AvmfRunLog runLog = new AvmfRunLog();
-    private static String jsonFileName;
+    protected static String jsonFileName;
+    protected static boolean fileLoaded = true;
 
-    public static void setJsonFileName(String fileName){
+    protected static void setJsonFileName(String fileName){
         jsonFileName = fileName;
     }
-    public static boolean fileLoaded = true;
 
     // entry point for launch without implementation. choose file step
     public static void main(String[] args){
 
-        jsonFileName = "something";
+        jsonFileName = "file_name";
         fileLoaded = false;
-
-
         launchVisualiser(jsonFileName);
+
     }
 
-    // method that launches the visualiser app, requires a file name as a string.
+    // method that launches the visualiser app, requires a file name as a string. Used directly as entry point when wiring visualiser directly into an instance of the AVMf.
     public static void launchVisualiser(String fileName){
-        // stub for continuing...
         System.out.println("Launching Visualiser");
         jsonFileName = fileName;
-
 
 
         if (fileLoaded) {
             try {
                 loadRunLog(jsonFileName);
-                System.out.println("File Loaded");
-
-
+                System.out.println("File Loaded: " + jsonFileName);
 
             } catch (FileNotFoundException e) {
                 System.out.println("Error loading JSON run log file");
             }
         }
 
+        // launch the GUI
         String[] args = new String[]{""};
-        FirstGraph.launchUI(args);
+        GUI.launchUI(args);
 
     }
 
@@ -63,8 +59,8 @@ public class start {
         AvmfRunLog runLog1 = gson.fromJson(bufferedReader, AvmfRunLog.class);
         runLog = runLog1;
 
-        System.out.println("HEADER");
-        System.out.println(runLog.getHeader());
+//        System.out.println("HEADER"); // debugging
+//        System.out.println(runLog.getHeader()); // debugging
     }
 
 
@@ -73,7 +69,4 @@ public class start {
     }
 
 
-
 }
-
-// todo: two paths for launching visualiser... launchVisualiser() called from inside implementation or launched from command line and pointed at file to load. Bassically the difference is in how the file loads. when called from in AVMf, a file path will be passed. When launched independently, either needs to supplied a file path as argument or if not, launches a file browser to locate file to load.

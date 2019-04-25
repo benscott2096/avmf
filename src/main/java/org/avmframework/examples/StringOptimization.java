@@ -14,7 +14,7 @@ import org.avmframework.objective.NumericObjectiveValue;
 import org.avmframework.objective.ObjectiveFunction;
 import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.StringVariable;
-import org.avmframework.visualiser.start;
+import org.avmframework.visualiser.Launcher;
 
 import static org.avmframework.variable.StringVariable.createPrintableASCIICharacterVariable;
 
@@ -92,6 +92,6 @@ public class StringOptimization {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
-        start.launchVisualiser(Monitor.getFileName());
+        Launcher.launchVisualiser(Monitor.getFileName());
     }
 }

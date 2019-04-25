@@ -6,7 +6,7 @@ public class StateMachine {
 
 	/**
 	 * 
-	 * 0. A start State, which is just like the root of one tree.
+	 * 0. A Launcher State, which is just like the root of one tree.
 	 * 1. List of all states and list of all transitions.
 	 * 
 	 * */

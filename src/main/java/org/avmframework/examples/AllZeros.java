@@ -16,7 +16,7 @@ import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.IntegerVariable;
 import org.avmframework.variable.Variable;
 
-import org.avmframework.visualiser.start;
+import org.avmframework.visualiser.Launcher;
 
 public class AllZeros {
 
@@ -85,6 +85,6 @@ public class AllZeros {
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
 
         // todo: might need wraping in if... further testing needed. Call should'nt exist if useVisualiser set to false.
-        start.launchVisualiser(Monitor.getFileName());
+        Launcher.launchVisualiser(Monitor.getFileName());
     }
 }

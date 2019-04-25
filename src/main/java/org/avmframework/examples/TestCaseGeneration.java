@@ -269,7 +269,7 @@ public class TestCaseGeneration {
 			
 			
 			boolean inTransition = false;
-			int initial_label = 0;//Used to tag the start state
+			int initial_label = 0;//Used to tag the Launcher state
 			
 			
 			
@@ -324,7 +324,7 @@ public class TestCaseGeneration {
 	                	State tempState = new State( stateName, vs);
 	                	
 	                	if( initial_label == 1){
-	                		System.out.println("----- Add start state. -----");
+	                		System.out.println("----- Add Launcher state. -----");
 	                		S.setstartstate(tempState);
 	                		S.addonestate(tempState);
 	                	}

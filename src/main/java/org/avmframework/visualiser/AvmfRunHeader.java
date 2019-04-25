@@ -10,19 +10,13 @@ public class AvmfRunHeader {
 
     // base data from monitor
     protected double bestObjVal;
-
     protected ArrayList<Double> bestVector = new ArrayList<Double>();
-
     protected int numEvaluations;
-
     protected int numUniqueEvaluations;
-
     protected int numRestarts;
-
     protected long runningTime;
 
     // search type
-
     protected String searchName;
 
     // termination policy data.
@@ -32,6 +26,7 @@ public class AvmfRunHeader {
     protected long tpRunningTime;
 
 
+    // constructor to
     public AvmfRunHeader(ObjectiveValue bestObjVal, Vector bestVector, int numEvaluations, int numUniqueEvaluations, int numRestarts, long runningTime){
 
         // conditional because there must be some evaluations for there to be an objective value.
@@ -39,9 +34,9 @@ public class AvmfRunHeader {
             this.bestObjVal = Double.valueOf(bestObjVal.toString());
         }
 
-
         if (bestVector != null){
 
+            // processing for StringVariable
             if (bestVector.getVariable(0) instanceof StringVariable){
                 String stringOfChars = ((StringVariable) bestVector.getVariable(0)).asString();
 
@@ -50,15 +45,14 @@ public class AvmfRunHeader {
                 }
 
             }
+            // processing for standard variables
             else{
                 for(int i = 0; i < bestVector.size(); i++ ) {
                     this.bestVector.add(Double.valueOf(bestVector.getVariable(i).toString()));
                 }
             }
 
-
         }
-
 
         this.numEvaluations = numEvaluations;
         this.numUniqueEvaluations = numUniqueEvaluations;
@@ -66,6 +60,8 @@ public class AvmfRunHeader {
         this.runningTime = runningTime;
     }
 
+
+    // methods to add extra data not added in constructor
 
     public void addSearchName(String searchName){
         this.searchName = searchName;

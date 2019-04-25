@@ -26,7 +26,7 @@ public class AVM {
     protected TerminationPolicy tp;
 
     /**
-     * The initializer used to initialize the values of variables at the start of the AVM search.
+     * The initializer used to initialize the values of variables at the Launcher of the AVM search.
      */
     protected Initializer initializer;
 
@@ -55,7 +55,7 @@ public class AVM {
      * Constructs an AVM instance.
      * @param localSearch A local search instance.
      * @param tp The termination policy to be used by the search.
-     * @param initializer The initializer to be used to initialize variables at the start <i>and</i> to restart the search.
+     * @param initializer The initializer to be used to initialize variables at the Launcher <i>and</i> to restart the search.
      */
     public AVM(LocalSearch localSearch, TerminationPolicy tp, Initializer initializer) {
         this(localSearch, tp, initializer, initializer);
@@ -65,7 +65,7 @@ public class AVM {
      * Constructs an AVM instance.
      * @param localSearch A local search instance.
      * @param tp The termination policy to be used by the search.
-     * @param initializer The initializer to be used to initialize variables at the start of the search.
+     * @param initializer The initializer to be used to initialize variables at the Launcher of the search.
      * @param restarter  The initializer to be used to initialize variables when restarting the search.
      */
     public AVM(LocalSearch localSearch, TerminationPolicy tp, Initializer initializer, Initializer restarter) {
@@ -76,7 +76,7 @@ public class AVM {
     }
 
 
-    //todo modify java doc to account for overloading.
+    //todo modify Javadoc to account for overloading.
     /**
      * Performs the AVM search.
      * @param vector The vector of variables to be optimized.
@@ -120,6 +120,14 @@ public class AVM {
         return monitor;
     }
 
+    /**
+     * Performs the AVM search. Method exists in overloaded form so that the visualiser can be used completely separately from the AVMf. Extra params are for use in the visualiser.
+     * @param vector The vector of variables to be optimized.
+     * @param objFun The objective function to optimize the variables against.
+     * @param useVisualiser boolean for visualiser use. Turning on will activate recording of AVMf outout data to JSON.
+     * @param searchName String for the name of the search type. Used for reporting in visualiser.
+     * @return A Monitor instance detailing the progression statistics of the completed search process.
+     */
     public Monitor search(Vector vector, ObjectiveFunction objFun, boolean useVisualiser, String searchName) {
         // set up the monitor
         this.monitor = new Monitor(tp, useVisualiser, searchName); // only line that differs to search method 1 todo: something about duplicated code?

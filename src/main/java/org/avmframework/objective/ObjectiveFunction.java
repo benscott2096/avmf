@@ -30,20 +30,17 @@ public abstract class ObjectiveFunction {
     }
 
     public ObjectiveValue evaluate(Vector vector) throws TerminationException {
-        monitor.observeVector(); // marker -- might need to do something like this -- BSS
+        monitor.observeVector();
 
 
 
         // If vector seen before, return previously calculated objective value
         if (useCache && previousVals.containsKey(vector)) {
-//            System.out.println("repeat!!!");
 
-            // only record key pair if record data is turned on
+            // only record key pair if record data is turned on by setting use visualiser to true
             if (monitor.getUseVisualiser()){
                 monitor.recordKeyPair(vector, previousVals.get(vector), iteration); // added -BSS
             }
-
-
 
             return previousVals.get(vector); // returns objective value
         }
@@ -69,7 +66,6 @@ public abstract class ObjectiveFunction {
             }
 
         }
-
 
 
         return objVal;

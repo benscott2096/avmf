@@ -1,23 +1,20 @@
 package org.avmframework.visualiser;
 
-
+//imports
+import org.avmframework.Monitor;
 
 import javafx.animation.*;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.HPos;
-import javafx.geometry.VPos;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
-import com.sun.javafx.charts.Legend;
 import javafx.scene.Cursor;
-
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.event.ActionEvent;
@@ -28,27 +25,22 @@ import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
-import java.lang.reflect.Field;
-import java.text.DecimalFormat;
 import javafx.scene.text.Font;
-
 import javafx.scene.control.Slider;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-
 import javafx.event.EventHandler;
-
-
 import javafx.util.Duration;
-import org.avmframework.Monitor;
+import com.sun.javafx.charts.Legend;
 
-
+import java.lang.reflect.Field;
+import java.text.DecimalFormat;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 
-
+// enums to support graph panning mechanic
 enum XDirection {
     NONE,
     LEFT,
@@ -62,8 +54,7 @@ enum YDirection{
 }
 
 
-
-public class FirstGraph extends Application {
+public class GUI extends Application {
 
     // to keep a record of what the original upper and lower bounds were calculated as using JavaFx bulit-in autoranging.
     private double originalXAxisLowerBound, originalXAxisUpperBound;
@@ -72,84 +63,100 @@ public class FirstGraph extends Application {
     // to store values involved in calculating logarithmic axes.
     private double xALog, xBLog, yALog, yBLog;
 
+    // to keep record of clicked points on graph axes.
+    private Double clickPointX,clickPointY = 0.0;
+
+    final double PAN_SENSITIVITY = 50; // higher = less speed
+
+
+
     // used to keep track of what variable is having its series set up.
     private int currentVariable = 1;
+    // used to keep track of whether the current variable has finished being set up. Used in logic to not record the wrap round at end of AVMf run.
     private boolean currentVarFinished = false;
     // variable to keeping track of which vector variable is currently being animated
-    private int currentAnimatedVariable = 0; // first landscape cuepoint has label 0
+    private int currentAnimatedVariable = 0; // note: first landscape cuepoint has label 0 NOT 1
+    // Keeps track of the number of variables in the vector
     private int noOfVariables;
 
-
+    private int currentln = 0;
 
 
     // the avmfAnimationSequence
     private SequentialTransition avmfAnimationSequence = new SequentialTransition();
+
+    // label initialisations
     final private Label currentOptVarValueLbl = new Label(); // initialised empty
     final private Label animationRateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getCurrentRate()));
     final private Label animationStateValueLbl = new Label(String.valueOf(avmfAnimationSequence.getStatus()));
-
     final private Label pairVariableValueLbL = new Label("");
-    final private Label pairVariableFitnessLbl = new Label("");
+    final private Label pairVariableObjValLbl = new Label("");
 
     @Override public void start(final Stage stage) {
 
+        // initialise filename from monitor
         String fileName = Monitor.getFileName();
 
-        // handles loading in a file using file chooser if visualiser not implemented in AVMf... todo: reword
-        if (!start.fileLoaded){
+        // make linechart from data
+        final LineChart<Number,Number> lineChart = makeLineChart(Launcher.getDataPairs());
+
+        // if the launcher configuration hasn't got a file loaded, load one here thorough a JavaFX file chooser GUI
+        if (!Launcher.fileLoaded){
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Open Resource File");
             File file = fileChooser.showOpenDialog(stage);
             String filePath = String.valueOf(file.toPath());
-            fileName = file.getName();
-            System.out.println(filePath);
-            start.setJsonFileName(filePath);
+            fileName = file.getName();// set file name
+            Launcher.setJsonFileName(filePath);
             try{
-                start.loadRunLog(filePath);
-                System.out.println("File Loaded");
-//                System.out.println(start.getDataPairs());
-
+                Launcher.loadRunLog(filePath);
+                System.out.println("Loaded file " + fileName);
+                System.out.println("At :" + filePath);
             }
             catch(FileNotFoundException e){
-                System.out.println("Error loading JSON run log file");
+                System.out.println("Error loading JSON AMVf runlog file");
             }
         }
 
-        noOfVariables = start.getDataPairs().get(0).getVector().size();
-
+        // record number of variables in vector
+        noOfVariables = Launcher.getDataPairs().get(0).getVector().size();
+        // set title of stage to file name
         stage.setTitle(fileName);
 
     // setting event handler for animation sequence finish.
     avmfAnimationSequence.setOnFinished(new EventHandler<ActionEvent>() {
         @Override
         public void handle(ActionEvent event) {
-
+            //update labels
             animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
             currentOptVarValueLbl.setText("END");
+
+            int dataLength = Launcher.getDataPairs().size();
+            lineChart.setTitle("Current Vector: " + String.valueOf(Launcher.getDataPairs().get(dataLength-1).getVector()));
         }
     });
 
-        final LineChart<Number,Number> lineChart = makeLineChart(start.getDataPairs());
 
 
+        // setup xAxis zoom slider
         final Slider xZoomSlider = new Slider(1, 100, originalXAxisUpperBound);
         xZoomSlider.setCursor(Cursor.HAND);
         xZoomSlider.setOrientation(Orientation.VERTICAL);
         xZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
         xZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
-
             @Override
-            public void changed(ObservableValue<? extends Number> observable, //
-                                Number oldValue, Number newValue) {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
 
-                final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
-                xAxis.setAutoRanging(false);
+//                System.out.println("Slider X has slidden!!!"); // Debugging
+
+                final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis(); // get xAxis
+                xAxis.setAutoRanging(false); // otherwise zoom overridden by auto ranging.
 
                 double currentXLowerBound = xAxis.getLowerBound();
                 double currentXUpperBound = xAxis.getUpperBound();
 
-                System.out.println("Slider X has slidden!!!");
+
 
                 // converts slider value into logarithmic value.
                 double logNewValue = xCalcLogValue((double) newValue);
@@ -159,32 +166,30 @@ public class FirstGraph extends Application {
                 double newLowerBound = - (logNewValue - pannedMidpoint);
                 double newUpperBound = logNewValue + pannedMidpoint;
 
+                // do the xAxis zoom
                 xZoom(lineChart, newLowerBound, newUpperBound);
-
+                // change the cursor to open hand to tell user they can now pan around zoomed graph
                 lineChart.setCursor(Cursor.OPEN_HAND);
             }
         });
 
-
+        // setup xAxis zoom slider
         final Slider yZoomSlider = new Slider(1, 100, originalYAxisUpperBound);
         yZoomSlider.setCursor(Cursor.HAND);
         yZoomSlider.setOrientation(Orientation.VERTICAL);
         yZoomSlider.setShowTickLabels(true);
         // Adding Listener to value property.
         yZoomSlider.valueProperty().addListener(new ChangeListener<Number>() {
-
             @Override
-            public void changed(ObservableValue<? extends Number> observable, //
-                                Number oldValue, Number newValue) {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
 
-                final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
-                yAxis.setAutoRanging(false);
+//                System.out.println("Slider Y has slidden!!!"); // Debugging
+
+                final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis(); // get yAxis
+                yAxis.setAutoRanging(false); // otherwise zoom overridden by auto ranging.
 
                 double currentYLowerBound = yAxis.getLowerBound();
                 double currentYUpperBound = yAxis.getUpperBound();
-
-                System.out.println("Slider Y has slidden!!!");
-
 
                 // converts slider value into logarithmic value.
                 double logNewValue = yCalcLogValue((double) newValue);
@@ -216,14 +221,14 @@ public class FirstGraph extends Application {
             }
         });
 
-        // button for resetting the graph to largest.
+        // button for resetting the graph to minimum zoom.
         Button resetZoomButton = new Button("Reset Zoom");
         resetZoomButton.setCursor(Cursor.HAND);
         resetZoomButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
                 final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
                 final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
-                // reseting graph axes
+                // resetting graph axes
                 xAxis.setLowerBound(originalXAxisLowerBound);
                 xAxis.setUpperBound(originalXAxisUpperBound);
                 yAxis.setLowerBound(originalYAxisLowerBound);
@@ -235,31 +240,10 @@ public class FirstGraph extends Application {
             }
         });
 
-        Button playAnimationButton = new Button("Play");
-        playAnimationButton.setCursor(Cursor.HAND);
-        playAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override public void handle(ActionEvent e) {
-                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
-                    avmfAnimationSequence.play();
-                    System.out.println(avmfAnimationSequence.getCuePoints());
-                    animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
-                    animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
-                }
 
-            }
-        });
+        // -------- Animation control buttons --------------- //
 
-        Button pauseAnimationButton  = new Button("Pause");
-        pauseAnimationButton.setCursor(Cursor.HAND);
-        pauseAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override public void handle(ActionEvent e) {
-                avmfAnimationSequence.pause();
-                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
-
-
-            }
-        });
-
+        // button to start/restart animation
         final Button restartAnimationButton  = new Button("Start");
         restartAnimationButton.setCursor(Cursor.HAND);
         restartAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -267,6 +251,8 @@ public class FirstGraph extends Application {
                 restartAnimationButton.setText("Restart");
                 avmfAnimationSequence.playFromStart();
                 animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                // reset title to initial conditions
+                lineChart.setTitle("Current Vector: " + String.valueOf(Launcher.getDataPairs().get(0).getVector()));
 
 
                 // set tool tips on all nodes.
@@ -292,6 +278,34 @@ public class FirstGraph extends Application {
             }
         });
 
+        // button to play animation
+        Button playAnimationButton = new Button("Play");
+        playAnimationButton.setCursor(Cursor.HAND);
+        playAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override public void handle(ActionEvent e) {
+                if (avmfAnimationSequence.getStatus() != Animation.Status.STOPPED){
+                    avmfAnimationSequence.play();
+                    System.out.println(avmfAnimationSequence.getCuePoints());
+                    animationRateValueLbl.setText(String.valueOf(avmfAnimationSequence.getCurrentRate()));
+                    animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+                }
+
+            }
+        });
+
+        // button to pause animation
+        Button pauseAnimationButton  = new Button("Pause");
+        pauseAnimationButton.setCursor(Cursor.HAND);
+        pauseAnimationButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override public void handle(ActionEvent e) {
+                avmfAnimationSequence.pause();
+                animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
+
+
+            }
+        });
+
+        // button to decrease animation rate to minimum
         Button decreaseRateButton  = new Button("Decrease Rate");
         decreaseRateButton.setCursor(Cursor.HAND);
         decreaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -306,6 +320,7 @@ public class FirstGraph extends Application {
             }
         });
 
+        // button to increase animation rate to maximum
         Button increaseRateButton  = new Button("Increase Rate");
         increaseRateButton.setCursor(Cursor.HAND);
         increaseRateButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -320,10 +335,12 @@ public class FirstGraph extends Application {
             }
         });
 
+        // button ro jump to end of animation and finish.
         Button jumpToEndButton  = new Button("Jump To End");
         jumpToEndButton.setCursor(Cursor.HAND);
         jumpToEndButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                // for rounding to 4dp
                 DecimalFormat df = new DecimalFormat("#.####");
                 df.setRoundingMode(RoundingMode.HALF_EVEN);
 
@@ -334,9 +351,9 @@ public class FirstGraph extends Application {
                     animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus()));
                     currentAnimatedVariable = noOfVariables;
                     currentOptVarValueLbl.setText("END");
-
-
-
+                    // set title to final vector
+                    int dataLength = Launcher.getDataPairs().size();
+                    lineChart.setTitle(String.valueOf(Launcher.getDataPairs().get(dataLength-1).getVector()));
 
                     // set tool tips on all nodes.
                     ObservableList<XYChart.Series<Number,Number>> chartData = lineChart.getData();
@@ -363,11 +380,12 @@ public class FirstGraph extends Application {
             }
         });
 
-
+        // button to jump to start of previous variable
         Button previousVariableButton  = new Button("Previous Variable");
         previousVariableButton.setCursor(Cursor.HAND);
         previousVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                // for rounding to 4dp
                 DecimalFormat df = new DecimalFormat("#.####");
                 df.setRoundingMode(RoundingMode.HALF_EVEN);
 
@@ -376,7 +394,24 @@ public class FirstGraph extends Application {
                         currentAnimatedVariable--;
                         currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
                     }
-                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
+
+                    // set chart title
+                    ArrayList<AvmfIterationOutput> dataPairs = Launcher.getDataPairs();
+                    int currentLine = 0;
+                    boolean firstLineFound = false;
+                    for (AvmfIterationOutput pair : dataPairs){
+
+                        if(pair.getIteration() == (currentAnimatedVariable + 1) && !firstLineFound){
+//                            System.out.println("update vector"); // debugging
+                            lineChart.setTitle("Current Vector: " + Launcher.getDataPairs().get(currentLine).getVector());
+                            firstLineFound = true;
+                        }
+                        else{
+                            currentLine++;
+                        }
+                    }
+
+//                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                     avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
 
 
@@ -412,10 +447,12 @@ public class FirstGraph extends Application {
             }
         });
 
+        // button to jump to start of next variable
         Button nextVariableButton  = new Button("Next Variable");
         nextVariableButton.setCursor(Cursor.HAND);
         nextVariableButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent e) {
+                // for rounding to 4dp
                 DecimalFormat df = new DecimalFormat("#.####");
                 df.setRoundingMode(RoundingMode.HALF_EVEN);
 
@@ -425,9 +462,28 @@ public class FirstGraph extends Application {
                         currentAnimatedVariable++;
                         currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label
                     }
-                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
+
+                    // set chart title
+                    ArrayList<AvmfIterationOutput> dataPairs = Launcher.getDataPairs();
+                    int currentLine = 0;
+                    boolean firstLineFound = false;
+                    for (AvmfIterationOutput pair : dataPairs){
+
+                        if(pair.getIteration() == (currentAnimatedVariable + 1) && !firstLineFound){
+//                            System.out.println("update vector"); // debugging
+                            lineChart.setTitle("Current Vector: " + Launcher.getDataPairs().get(currentLine).getVector());
+                            firstLineFound = true;
+                        }
+                        else{
+                            currentLine++;
+                        }
+                    }
+
+//                    System.out.println("currentAnimatedVariable: " + currentAnimatedVariable); // debugging
                     // jump to cure point of next variable.
                     avmfAnimationSequence.jumpTo(String.valueOf(currentAnimatedVariable));
+
+
 
 
                     // add tooltips to series before the currently animated one
@@ -454,9 +510,10 @@ public class FirstGraph extends Application {
         });
 
 
+        // ---------- Layout setup ------------//
 
-        BorderPane border = new BorderPane();
-
+        // main layout pane
+        BorderPane mainLayout = new BorderPane();
 
         // unchanging labels
         Label headerTitle = new Label("Header Title");
@@ -468,9 +525,9 @@ public class FirstGraph extends Application {
         Label animationControlLbl = new Label("Animation Control: ");
 
         Label variableValueLbl = new Label("Variable Value: ");
-        Label variableFitnessLbl = new Label("Variable Fitness");
+        Label variableFitnessLbl = new Label("Objective Value:");
 
-        // header labels
+        // header labels (static)
         Label searchNameLbl = new Label("Search Type:"); // might not use
         Label runningTimeLbl = new Label("Running Time:");
         Label bestObjValLbl = new Label("Best Objective Value:");
@@ -478,54 +535,82 @@ public class FirstGraph extends Application {
         Label numEvaluationsLbl = new Label("No. Evaluations:");
         Label numUniqueEvaluationsLbl = new Label("No. Unique Evaluations:");
         Label numRestartsLbl = new Label("No. Restarts:");
-        // header data labels
-        Label dataSearchNameLbl = new Label(start.runLog.getHeader().searchName); // might not use
-        Label dataRunningTimeLbl = new Label(String.valueOf(start.runLog.getHeader().runningTime + "ms"));
-        Label dataBestObjValLbl = new Label(String.valueOf(start.runLog.getHeader().bestObjVal));
-        Label dataBestVectorLbl = new Label(String.valueOf(start.runLog.getHeader().bestVector));
-        Label dataNumEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().numEvaluations));
-        Label dataNumUniqueEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().numUniqueEvaluations));
-        Label dataNumRestartsLbl = new Label(String.valueOf(start.runLog.getHeader().numRestarts));
+        // header data labels (static)
+        Label dataSearchNameLbl = new Label(Launcher.runLog.getHeader().searchName); // might not use
+        Label dataRunningTimeLbl = new Label(String.valueOf(Launcher.runLog.getHeader().runningTime + "ms"));
+        Label dataBestObjValLbl = new Label(String.valueOf(Launcher.runLog.getHeader().bestObjVal));
+        Label dataBestVectorLbl = new Label(String.valueOf(Launcher.runLog.getHeader().bestVector));
+        Label dataNumEvaluationsLbl = new Label(String.valueOf(Launcher.runLog.getHeader().numEvaluations));
+        Label dataNumUniqueEvaluationsLbl = new Label(String.valueOf(Launcher.runLog.getHeader().numUniqueEvaluations));
+        Label dataNumRestartsLbl = new Label(String.valueOf(Launcher.runLog.getHeader().numRestarts));
 
 
-        // termination policy labels
+        // termination policy labels (static)
         Label terminationPoilicyTitle = new Label("Termination Policy");
         Label terminateOnOptimalLbl = new Label("Terminate On Optimal:");
         Label maxEvaluationsLbl = new Label("Max Evaluations:");
         Label maxRestartsLbl = new Label("Max Restarts:");
         Label tpRunningTimeLbl = new Label("Max Running Time:");
         // termination policy labels
-        Label dataTerminateOnOptimalLbl = new Label(String.valueOf(start.runLog.getHeader().terminateOnOptimal));
-        //
-
+        Label dataTerminateOnOptimalLbl = new Label(String.valueOf(Launcher.runLog.getHeader().terminateOnOptimal));
+        // (dynamically initialised labels)
         Label dataMaxEvaluationsLbl, dataMaxRestartsLbl, dataTpRunningTimeLbl;
-
-
-        if (start.runLog.getHeader().maxEvaluations == -1 ){
+        if (Launcher.runLog.getHeader().maxEvaluations == -1 ){
             dataMaxEvaluationsLbl = new Label("No Limit");
         }
         else{
-            dataMaxEvaluationsLbl = new Label(String.valueOf(start.runLog.getHeader().maxEvaluations));
+            dataMaxEvaluationsLbl = new Label(String.valueOf(Launcher.runLog.getHeader().maxEvaluations));
         }
 
-        if(start.runLog.getHeader().maxRestarts == -1 ){
+        if(Launcher.runLog.getHeader().maxRestarts == -1 ){
             dataMaxRestartsLbl = new Label("No Limit");
         }
         else{
-            dataMaxRestartsLbl = new Label(String.valueOf(start.runLog.getHeader().maxRestarts));
+            dataMaxRestartsLbl = new Label(String.valueOf(Launcher.runLog.getHeader().maxRestarts));
         }
 
-        if(start.runLog.getHeader().tpRunningTime == -1){
+        if(Launcher.runLog.getHeader().tpRunningTime == -1){
             dataTpRunningTimeLbl = new Label("No Limit");
         }
         else{
-            dataTpRunningTimeLbl = new Label(String.valueOf(start.runLog.getHeader().tpRunningTime) + "ms");
+            dataTpRunningTimeLbl = new Label(String.valueOf(Launcher.runLog.getHeader().tpRunningTime) + "ms");
         }
 
 
+        // setup header reporting area
+        GridPane headerArea = new GridPane();
+        headerArea.setPadding(new Insets(10, 10, 10, 10));
+        GridPane.setHalignment(dataSearchNameLbl, HPos.CENTER);
+        GridPane.setHalignment(terminationPoilicyTitle, HPos.CENTER);
+        GridPane.setHalignment(dataBestVectorLbl, HPos.LEFT);
+
+        headerArea.add(dataSearchNameLbl,0,0, 2, 1);
+        headerArea.add(runningTimeLbl,0,1);
+        headerArea.add(dataRunningTimeLbl,1,1);
+        headerArea.add(bestObjValLbl,0,2);
+        headerArea.add(dataBestObjValLbl,1,2);
+        headerArea.add(numEvaluationsLbl,0,3);
+        headerArea.add(dataNumEvaluationsLbl,1,3);
+        headerArea.add(numUniqueEvaluationsLbl,0,4);
+        headerArea.add(dataNumUniqueEvaluationsLbl,1,4);
+        headerArea.add(numRestartsLbl,0,5);
+        headerArea.add(dataNumRestartsLbl,1,5);
+
+        // termination policy area
+        headerArea.add(terminationPoilicyTitle,0,6, 2 , 1);
+        headerArea.add(terminateOnOptimalLbl,0,7);
+        headerArea.add(dataTerminateOnOptimalLbl,1,7);
+        headerArea.add(maxEvaluationsLbl,0,8);
+        headerArea.add(dataMaxEvaluationsLbl,1,8);
+        headerArea.add(maxRestartsLbl,0,9);
+        headerArea.add(dataMaxRestartsLbl,1,9);
+        headerArea.add(tpRunningTimeLbl,0,10);
+        headerArea.add(dataTpRunningTimeLbl,1,10);
 
 
 
+
+        // setup zoom control box
         GridPane zoomControl = new GridPane();
         zoomControl.setHgap(10);
         zoomControl.setVgap(10);
@@ -539,9 +624,41 @@ public class FirstGraph extends Application {
         GridPane.setHalignment(resetZoomButton, HPos.CENTER);
 
 
+
+
+        // setup live reporting area
+        GridPane reportingArea = new GridPane();
+        reportingArea.setPadding(new Insets(10, 10, 10, 10));
+        reportingArea.add(currentOptVarLbl,0,0);
+        reportingArea.add(currentOptVarValueLbl,1,0);
+
+        reportingArea.add(variableValueLbl,0,1);
+        reportingArea.add(pairVariableValueLbL,1,1);
+
+        reportingArea.add(variableFitnessLbl,0,2);
+        reportingArea.add(pairVariableObjValLbl, 1,2);
+
+        reportingArea.add(animationStateLbl,0,3);
+        reportingArea.add(animationStateValueLbl,1,3);
+
+        reportingArea.add(animationRateLbl,0,4);
+        reportingArea.add(animationRateValueLbl,1,4);
+
+
+
+        // VBox for Right hand side
+        VBox rightArea = new VBox();
+        rightArea.getChildren().addAll(
+                headerArea,
+                zoomControl,
+                reportingArea
+        );
+
+
+        // animation control area setup.
         HBox animationControl = new HBox();
         animationControl.setAlignment(Pos.BOTTOM_CENTER);
-
+        animationControlLbl.setAlignment(Pos.TOP_CENTER);
 
         animationControl.getChildren().addAll(
                 animationControlLbl,
@@ -555,96 +672,22 @@ public class FirstGraph extends Application {
                 jumpToEndButton
         );
 
-        animationControlLbl.setAlignment(Pos.TOP_CENTER);
-
-        // header
-        GridPane headerArea = new GridPane();
-        headerArea.setPadding(new Insets(10, 10, 10, 10));
-        GridPane.setHalignment(dataSearchNameLbl, HPos.CENTER);
-        GridPane.setHalignment(terminationPoilicyTitle, HPos.CENTER);
-        GridPane.setHalignment(dataBestVectorLbl, HPos.LEFT);
 
 
-        headerArea.add(dataSearchNameLbl,0,0, 2, 1);
-
-        headerArea.add(runningTimeLbl,0,1);
-        headerArea.add(dataRunningTimeLbl,1,1);
-
-        headerArea.add(bestObjValLbl,0,2);
-        headerArea.add(dataBestObjValLbl,1,2);
-
-        headerArea.add(bestVectorLbl,0,3);
-//        headerArea.add(dataBestVectorLbl,0,4, 2, 1);
-
-        headerArea.add(numEvaluationsLbl,0,5);
-        headerArea.add(dataNumEvaluationsLbl,1,5);
-
-        headerArea.add(numUniqueEvaluationsLbl,0,6);
-        headerArea.add(dataNumUniqueEvaluationsLbl,1,6);
-
-        headerArea.add(numRestartsLbl,0,7);
-        headerArea.add(dataNumRestartsLbl,1,7);
-
-        // termination policy area
-        headerArea.add(terminationPoilicyTitle,0,8, 2 , 1);
-
-        headerArea.add(terminateOnOptimalLbl,0,9);
-        headerArea.add(dataTerminateOnOptimalLbl,1,9);
-
-        headerArea.add(maxEvaluationsLbl,0,10);
-        headerArea.add(dataMaxEvaluationsLbl,1,10);
-
-        headerArea.add(maxRestartsLbl,0,11);
-        headerArea.add(dataMaxRestartsLbl,1,11);
-
-        headerArea.add(tpRunningTimeLbl,0,12);
-        headerArea.add(dataTpRunningTimeLbl,1,12);
-
-
-
-
-
-
-
-        GridPane reportingArea = new GridPane();
-        reportingArea.add(currentOptVarLbl,0,0);
-        reportingArea.add(currentOptVarValueLbl,1,0);
-        reportingArea.add(animationStateLbl,0,1);
-        reportingArea.add(animationStateValueLbl,1,1);
-        reportingArea.add(animationRateLbl,0,2);
-        reportingArea.add(animationRateValueLbl,1,2);
-        reportingArea.add(variableValueLbl,0,3);
-        reportingArea.add(pairVariableValueLbL,1,3);
-        reportingArea.add(variableFitnessLbl,0,4);
-        reportingArea.add(pairVariableFitnessLbl, 1,4);
-
-
-
-        // VBox for Right hand side
-        VBox rightArea = new VBox();
-        rightArea.getChildren().addAll(
-                headerArea,
-                zoomControl,
-                reportingArea
-        );
-
-        // adding areas to main layout
-        border.setCenter(lineChart);
+        // adding areas to main BorderPane layout
+        mainLayout.setCenter(lineChart);
         BorderPane.setAlignment(animationControl, Pos.BOTTOM_RIGHT);
-        border.setBottom(animationControl);
+        mainLayout.setBottom(animationControl);
+        mainLayout.setRight(rightArea);
 
-
-        border.setRight(rightArea);
-
-
-
-        Scene scene  = new Scene(border,1366,768);
-
-
+        // setup scene with default 16:9 aspect ratio resolution
+        Scene scene  = new Scene(mainLayout,1366,768);
+        // make things happen!!!
         stage.setScene(scene);
         stage.show();
 
 
+        // ---------- after stage.show() adjustments to GUI ------------- //
 
         // all this happening after stage.show() because autoranging has been done by this point and is needed to set default values in the slider.
         final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
@@ -654,17 +697,18 @@ public class FirstGraph extends Application {
         originalXAxisUpperBound = xAxis.getUpperBound();
 
         // debugging
-        System.out.println("original X lower bound");
-        System.out.println(originalXAxisLowerBound);
-        System.out.println("original X upper bound");
-        System.out.println(originalXAxisUpperBound);
+//        System.out.println("original X lower bound");
+//        System.out.println(originalXAxisLowerBound);
+//        System.out.println("original X upper bound");
+//        System.out.println(originalXAxisUpperBound);
 
         // setting up logarithm calculation engine for x axis zooming
         xSetupLogCalc(0.1, originalXAxisUpperBound);
         // setting x zoom slider default values
         xZoomSlider.setMax(originalXAxisUpperBound);
         xZoomSlider.setValue(originalXAxisUpperBound);
-        xZoomSlider.setMajorTickUnit(originalXAxisUpperBound); // line to fudge the showing of no major tick marks. Can't easily show them because they don't correspond to logarithmic zoom
+        xZoomSlider.setMajorTickUnit(originalXAxisUpperBound);// Show no major tick marks. Can't easily show them because they don't correspond to logarithmic zoom
+
 
 
 
@@ -675,10 +719,10 @@ public class FirstGraph extends Application {
         originalYAxisUpperBound = yAxis.getUpperBound();
 
         // debugging
-        System.out.println("original Y lower bound");
-        System.out.println(originalYAxisLowerBound);
-        System.out.println("original Y upper bound");
-        System.out.println(originalYAxisUpperBound);
+//        System.out.println("original Y lower bound");
+//        System.out.println(originalYAxisLowerBound);
+//        System.out.println("original Y upper bound");
+//        System.out.println(originalYAxisUpperBound);
 
 
         // setting up logarithm calculation engine for y axis zooming
@@ -686,53 +730,69 @@ public class FirstGraph extends Application {
         // setting y zoom slider default values
         yZoomSlider.setMax(originalYAxisUpperBound);
         yZoomSlider.setValue(originalYAxisUpperBound);
-        yZoomSlider.setMajorTickUnit(originalYAxisUpperBound);// line to fudge the showing of no major tick marks. Can't easily show them because they don't correspond to logarithmic zoom
+        yZoomSlider.setMajorTickUnit(originalYAxisUpperBound);// Show no major tick marks. Can't easily show them because they don't correspond to logarithmic zoom
 
+        // resetting the cursor and zoom to default, ensures correct cursor behaviour
+
+        // resetting graph axes
+        xAxis.setLowerBound(originalXAxisLowerBound);
+        xAxis.setUpperBound(originalXAxisUpperBound);
+        yAxis.setLowerBound(originalYAxisLowerBound);
+        yAxis.setUpperBound(originalYAxisUpperBound);
+        // updating sliders to match -- duplicate?
+        xZoomSlider.setValue(originalXAxisUpperBound);
+        yZoomSlider.setValue(originalYAxisUpperBound);
         lineChart.setCursor(Cursor.DEFAULT);
 
 
     }
 
+// ------ Logarithm methods ------ //
 
-    // takes in a value between x axis upper and lower bounds (value used from slider) and returns its logarithmic zoom equivalent
+    // Method takes in a value between x axis upper and lower bounds (value used from slider) and returns its logarithmic zoom equivalent
     private double xCalcLogValue(double value){
         double logValue = xALog * Math.exp(xBLog *value);
         return logValue;
     }
 
-    // method to calculate and store values needed for logarithmic x axis zoom calculations
+    // Method to calculate and store values needed for logarithmic x axis zoom calculations
     private void xSetupLogCalc(double x, double y){
         xBLog = Math.log(y/x)/(y-x);
         xALog = y / Math.exp(xBLog * y);
     }
 
-    // takes in a value between y axis upper and lower bounds (value used from slider) and returns its logarithmic zoom equivalent
+    // Method takes in a value between y axis upper and lower bounds (value used from slider) and returns its logarithmic zoom equivalent
     private double yCalcLogValue(double value){
         double logValue = yALog * Math.exp(yBLog *value);
         return logValue;
     }
 
-    // method to calculate and store values needed for logarithmic y axis zoom calculations
+    // Method to calculate and store values needed for logarithmic y axis zoom calculations
     private void ySetupLogCalc(double x, double y){
         yBLog = Math.log(y/x)/(y-x);
         yALog = y / Math.exp(yBLog * y);
     }
 
 
+    // --------- main methods --------- //
 
-
+    // main method
     public static void main(String[] args) {
         launch(args);
     }
 
+    // has exactly the same purpose as main method but name is more semantic so its use is favoured.
     public static void launchUI(String[] args) {
         launch(args);
     }
+
+    // -------- Chart setup methods -------- //
 
 
     // method that returns a line chart set up with the series of all vector variables.
     private LineChart<Number,Number> makeLineChart(ArrayList<AvmfIterationOutput> dataPairs) {
 
+        // initialisations
         double runningDurationTotal = 0.0;
         int previousVarCount = 0;
 
@@ -740,17 +800,17 @@ public class FirstGraph extends Application {
         final NumberAxis xAxis = new NumberAxis();
         final NumberAxis yAxis = new NumberAxis();
         xAxis.setLabel("Value of Vector Variable");
-        yAxis.setLabel("Fitness (lower is better)");
+        yAxis.setLabel("Objective Value");
 
 
         //creating the chart
         final LineChart<Number, Number> lineChart =
                 new LineChart<Number, Number>(xAxis, yAxis);
 
-        lineChart.setTitle("Optimising to best vector: " + start.runLog.getHeader().bestVector); // todo: change!!!
-//lineChart.t().set(Font.font(15));
+        // chart title and formatting.
+        lineChart.setTitle("Current Vector: " + Launcher.runLog.getDataPairs().get(currentln).getVector());
         Label chartTitle = (Label)lineChart.lookup(".chart-title");
-        chartTitle.setFont(Font.font(11));
+        chartTitle.setFont(Font.font(12));
         chartTitle.setWrapText(true);
 
 
@@ -772,14 +832,17 @@ public class FirstGraph extends Application {
             fadeInLandscape.getKeyFrames().addAll(
                     new KeyFrame(new Duration(STANDARD_LANDSCAPE_ANIMATION_TIME), "landscape of Variable " + String.valueOf(variableNo),  new KeyValue(seriesNode.opacityProperty(), 1))
             );
-            final int variableNoHelper = variableNo; // need new final variable declaration to get variableNo into inner class
+            final int variableNoHelper = variableNo; // new final variable declaration to get variableNo into inner class
             // event handler to update the global variable keeping track of which vector variable is currently being animated
             fadeInLandscape.setOnFinished(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
+
                     currentAnimatedVariable = variableNoHelper;
                     currentOptVarValueLbl.setText(String.valueOf(currentAnimatedVariable + 1)); // update reporting label for current variable being optimised
                     animationStateValueLbl.setText(String.valueOf(avmfAnimationSequence.getStatus())); // update reporting label for animation state.
+
+
                 }
             });
             avmfAnimationSequence.getChildren().add(fadeInLandscape); // adding timeline fade to avmfAnimationSequence
@@ -790,6 +853,7 @@ public class FirstGraph extends Application {
             ObservableList<XYChart.Data> theData = series.getData();
             for (final XYChart.Data dataPoint : theData){
                 final Node dataPointNode = dataPoint.getNode();
+                // set initial properties
                 dataPointNode.setOpacity(0);
                 dataPointNode.setScaleX(4);
                 dataPointNode.setScaleY(4);
@@ -801,6 +865,7 @@ public class FirstGraph extends Application {
                         new KeyFrame(new Duration(1000), new KeyValue(dataPointNode.scaleYProperty(), 1 ))
                         );
 
+                // event handler for drop point animation finished.
                 dropPoint.setOnFinished(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
@@ -808,17 +873,36 @@ public class FirstGraph extends Application {
                         DecimalFormat df = new DecimalFormat("#.####");
                         df.setRoundingMode(RoundingMode.HALF_EVEN);
 
-                        pairVariableValueLbL.setText(String.valueOf(dataPoint.getXValue()));
-                        pairVariableFitnessLbl.setText(String.valueOf(df.format(dataPoint.getYValue())));
+                        double x = (double) dataPoint.getXValue();
+                        double y = (double) dataPoint.getYValue();
+
+                        pairVariableValueLbL.setText(String.valueOf(x));
+                        pairVariableObjValLbl.setText(String.valueOf(df.format(y)));
+
+                        // set chart title
+                        ArrayList<AvmfIterationOutput> dataPairs = Launcher.getDataPairs();
+                        int currentLine = 0;
+                        for (AvmfIterationOutput pair : dataPairs){
+
+                            if(pair.getIteration() == (currentAnimatedVariable + 1) && pair.getVector().get(currentAnimatedVariable) == x && pair.getObjVal() == y){
+//                                System.out.println("update vector"); // debugging
+                                lineChart.setTitle("Current Vector: " + Launcher.getDataPairs().get(currentLine).getVector());
+                            }
+                            else{
+                                currentLine++;
+                            }
+                        }
+
+//                        lineChart.setTitle("current Vector " + Launcher.getDataPairs().get(currentln).getVector());
+
 
                         // setting tooltip on data points
-
-
                         final Tooltip tooltip = new Tooltip(String.valueOf("Value: " + dataPoint.getXValue()) + " : Fitness: " + df.format(dataPoint.getYValue()));
                         hackTooltipStartTiming(tooltip);
                         Tooltip.install(dataPointNode,tooltip);
 
                         dataPointNode.setCursor(Cursor.CROSSHAIR);
+
                     }
                 });
 
@@ -826,14 +910,14 @@ public class FirstGraph extends Application {
                 avmfAnimationSequence.getChildren().addAll(dropPoint); // adding keyframes to avmfAnimationSequence.
 
             }
-            System.out.println("series.length : " + theData.size());
+//            System.out.println("series.length : " + theData.size()); // Debugging
 
             // conditional allows the first cue point to = 0 milliseconds
             if (variableNo > 0){
                 double varCount = previousVarCount; // explicitly coded fix for indexing issue where cue points were set off by 1.
                 double thisVarDuration = varCount * STANDARD_POINT_ANIMATION_TIME; // length of this variables duration with offset from landscape fades.
-                double thisVarStartTime = runningDurationTotal + thisVarDuration + STANDARD_LANDSCAPE_ANIMATION_TIME; // calculate start time of this variableNo
-                Duration nextVarStartDuration = new Duration(thisVarStartTime); // new duration object with the this variables start time.
+                double thisVarStartTime = runningDurationTotal + thisVarDuration + STANDARD_LANDSCAPE_ANIMATION_TIME; // calculate Launcher time of this variableNo
+                Duration nextVarStartDuration = new Duration(thisVarStartTime); // new duration object with the this variables Launcher time.
                 avmfAnimationSequence.getCuePoints().put(String.valueOf(variableNo), nextVarStartDuration); // add cue point to avmfAnimationSequence.
                 runningDurationTotal = thisVarStartTime; // update running total
             }
@@ -847,20 +931,32 @@ public class FirstGraph extends Application {
 
 
         // Panning on the graph axes
-        lineChart.setOnMousePressed(pressHandler);
+        lineChart.setOnMousePressed(new EventHandler<MouseEvent>() {
+            // handler for initial mouse click that sets up first click points of pan.
+            @Override
+            public void handle(MouseEvent event) {
+                // debugging
+//                System.out.println("press!!!");
+//                System.out.println(event.getX());
+//                System.out.println(event.getY());
+
+                clickPointX = event.getX();
+                clickPointY = event.getY();
+            }
+        });
         lineChart.setOnMouseDragged(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
                 // debugging
-                System.out.println("DRAG!!!");
-                System.out.println(event.getX());
-                System.out.println(event.getY());
+//                System.out.println("DRAG!!!");
+//                System.out.println(event.getX());
+//                System.out.println(event.getY());
 
                 double newX = event.getX();
                 double newY = event.getY();
 
 
-                // both axis pans... think this is less intuutive with the cursor open handed.
+                // both axis pans... think this is less intuitive with the cursor open handed. commented out.
 //                if (clickPointX < newX && clickPointY < newY){
 //                    System.out.println("Down Right");
 //                    panGraph(lineChart,XDirection.LEFT, YDirection.DOWN);
@@ -924,14 +1020,12 @@ public class FirstGraph extends Application {
                                             li.getSymbol().setOpacity(1);
                                         }
 
-
                                         s.getNode().setVisible(!s.getNode().isVisible()); // Toggle visibility of line
                                         for (XYChart.Data<Number, Number> d : s.getData()) {
                                             if (d.getNode() != null) {
                                                 d.getNode().setVisible(s.getNode().isVisible()); // Toggle visibility of every node in the series
                                             }
                                         }
-
                                 }
                             });
                         }
@@ -944,156 +1038,62 @@ public class FirstGraph extends Application {
     }
 
 
-    // used to control the speed of tooltip show.
-    // found here: https://stackoverflow.com/questions/26854301/how-to-control-the-javafx-tooltips-delay
-    public static void hackTooltipStartTiming(Tooltip tooltip) {
-        try {
-            Field fieldBehavior = tooltip.getClass().getDeclaredField("BEHAVIOR");
-            fieldBehavior.setAccessible(true);
-            Object objBehavior = fieldBehavior.get(tooltip);
-
-            Field fieldTimer = objBehavior.getClass().getDeclaredField("activationTimer");
-            fieldTimer.setAccessible(true);
-            Timeline objTimer = (Timeline) fieldTimer.get(objBehavior);
-
-            objTimer.getKeyFrames().clear();
-            objTimer.getKeyFrames().add(new KeyFrame(new Duration(100)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    private Double clickPointX,clickPointY = 0.0; // move to top?
-
-// event handler for initial mouse click that sets up first click points of pan. // todo: make annoymous?
-    EventHandler<MouseEvent> pressHandler = new EventHandler<MouseEvent>() {
-        @Override
-        public void handle(MouseEvent event) {
-            System.out.println("press!!!");
-            System.out.println(event.getX());
-            System.out.println(event.getY());
-
-            clickPointX = event.getX();
-            clickPointY = event.getY();
-
-        }
-    };
-
-
-final double PAN_SENSITIVITY = 50; // higher = less speed -- might need to split into x and y? wait until graph correct size.
-
-private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection, YDirection yDirection) {
-    final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
-    final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
-
-    // setup for x pans
-    double xCurrentLowerBound = xAxis.getLowerBound();
-    double xCurrentUpperBound = xAxis.getUpperBound();
-    double xWidth = Math.abs(xCurrentUpperBound) + Math.abs(xCurrentLowerBound);
-    double xPanStep = xWidth / PAN_SENSITIVITY;
-
-    // setup for y pans
-    double yCurrentLowerBound = yAxis.getLowerBound();
-    double yCurrentUpperBound = yAxis.getUpperBound();
-    double yWidth = Math.abs(yCurrentUpperBound - yCurrentLowerBound);
-    double yPanStep = yWidth / (PAN_SENSITIVITY); // still seems to sensitive at higher zooms.
-
-
-    // X axis panning right
-    if(xCurrentUpperBound < originalXAxisUpperBound){
-        if (xDirection == XDirection.RIGHT){
-            xAxis.setLowerBound(xCurrentLowerBound + xPanStep);
-            xAxis.setUpperBound(xCurrentUpperBound + xPanStep);
-        }
-    }
-    else{
-        System.out.println("reached X upper bound"); // terminal reporting/debugging
-    }
-    // X axis panning Left
-    if(xCurrentLowerBound > originalXAxisLowerBound){
-        if (xDirection == XDirection.LEFT){
-            xAxis.setLowerBound(xCurrentLowerBound - xPanStep);
-            xAxis.setUpperBound(xCurrentUpperBound - xPanStep);
-        }
-    }
-    else {
-        System.out.println("reached X Lower bound"); // terminal reporting/debugging
-    }
-
-    // Y axis panning down
-    if(yCurrentUpperBound < originalYAxisUpperBound){
-        if (yDirection == YDirection.DOWN){
-            yAxis.setLowerBound(yCurrentLowerBound + yPanStep);
-            yAxis.setUpperBound(yCurrentUpperBound + yPanStep);
-        }
-    }
-    else{
-        System.out.println("reached Y upper bound"); // terminal reporting/debugging
-    }
-    // Y axis panning up
-    if(yCurrentLowerBound > originalYAxisLowerBound){
-        if (yDirection == YDirection.UP){
-            yAxis.setLowerBound(yCurrentLowerBound - yPanStep);
-            yAxis.setUpperBound(yCurrentUpperBound - yPanStep);
-        }
-    }
-    else {
-        System.out.println("reached Y Lower bound"); // terminal reporting/debugging
-    }
-
-
-
-}
-
-
-
+    // method that given a set of data pairs returns a series for a current variable
     private XYChart.Series setUpSeries(ArrayList<AvmfIterationOutput> dataPairs){
         XYChart.Series series = new XYChart.Series();
         series.setName("Variable " + currentVariable);
-        System.out.println("making series for variable " + currentVariable);
-        System.out.println(dataPairs.get(dataPairs.size()-1).getVector().size());
+//        System.out.println("making series for variable " + currentVariable); // debugging
+//        System.out.println(dataPairs.get(dataPairs.size()-1).getVector().size()); //debugging
 
+        // used in logic for determining if a series is finished. used for not including the wrap around.
+        int previousIteration = 1;
 
-
-        // todo: introduce final variable(s) after -- attempt
+        // alternative series generation attempting to work around variable length stringVariable vectors -- not completely successful
         if ((currentVariable - 1) > dataPairs.get(0).getVector().size()) {
-            System.out.println("Alternative series write");
+//            System.out.println("Alternative series write"); // debugging
             for (AvmfIterationOutput pair : dataPairs) {
                 if ((pair.getIteration() == currentVariable && pair.getVector().size() > currentVariable -1)) {
-                    System.out.print("writing it!");
-                    ObservableList seriesData = series.getData();
-                    // add the data point to series
-                    seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
+//                    System.out.print("writing it!"); // debugging
+                    // only add to series if current variable still has pairs to add. This conditional filters out the extra wrap round at the end of an AVM run. Handles restarts by only making series for the first run of AVM algorithm.
+                    if ((pair.getIteration() == currentVariable && pair.getRestartNo() == 0) && !currentVarFinished) {
+                        ObservableList seriesData = series.getData();
+                        // add the data point to series
+                        seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
+                    }
+                    else if (pair.getIteration() != currentVariable && previousIteration == currentVariable){
+//                        System.out.println("Series finished for var"); // debugging
+                        currentVarFinished = true;
+                    }
+                    previousIteration = pair.getIteration();
                 }
             }
-
-
         }
+        // standard series generation
         else{
-            int previousIteration = 1;
             for (AvmfIterationOutput pair : dataPairs) {
-
-                // only add to series if current variable still has pairs to add. This conditional filters out the extra wrap round at the end of an AVM run.
+                // only add to series if current variable still has pairs to add. This conditional filters out the extra wrap round at the end of an AVM run. Handles restarts by only making series for the first run of AVM algorithm.
                 if ((pair.getIteration() == currentVariable && pair.getRestartNo() == 0) && !currentVarFinished) {
                     ObservableList seriesData = series.getData();
                     // add the data point to series
                     seriesData.add(new XYChart.Data(pair.getVector().get(currentVariable - 1), pair.getObjVal()));
                 }
                 else if (pair.getIteration() != currentVariable && previousIteration == currentVariable){
-                    System.out.println("Series finished for var");
+//                    System.out.println("Series finished for var"); // debugging
                     currentVarFinished = true;
                 }
                 previousIteration = pair.getIteration();
             }
         }
 
-        System.out.println(series.getData());
+//        System.out.println(series.getData()); // debugging
         // updating current variable stats
         currentVariable++;
         currentVarFinished = false;
         return series;
     }
+
+
+    // ----------- zoom and panning methods -------------- //
 
 
     // for zooming x axis
@@ -1121,6 +1121,88 @@ private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection,
             yAxis.setUpperBound(upperBound);
         }
 
+    }
+
+
+    private void panGraph(LineChart<Number,Number> lineChart, XDirection xDirection, YDirection yDirection) {
+        final NumberAxis xAxis = (NumberAxis) lineChart.getXAxis();
+        final NumberAxis yAxis = (NumberAxis) lineChart.getYAxis();
+
+        // setup for x pans
+        double xCurrentLowerBound = xAxis.getLowerBound();
+        double xCurrentUpperBound = xAxis.getUpperBound();
+        double xWidth = Math.abs(xCurrentUpperBound) + Math.abs(xCurrentLowerBound);
+        double xPanStep = xWidth / PAN_SENSITIVITY;
+
+        // setup for y pans
+        double yCurrentLowerBound = yAxis.getLowerBound();
+        double yCurrentUpperBound = yAxis.getUpperBound();
+        double yWidth = Math.abs(yCurrentUpperBound - yCurrentLowerBound);
+        double yPanStep = yWidth / (PAN_SENSITIVITY); // still seems to sensitive at higher zooms.
+
+
+        // X axis panning right
+        if(xCurrentUpperBound < originalXAxisUpperBound){
+            if (xDirection == XDirection.RIGHT){
+                xAxis.setLowerBound(xCurrentLowerBound + xPanStep);
+                xAxis.setUpperBound(xCurrentUpperBound + xPanStep);
+            }
+        }
+        else{
+//        System.out.println("reached X upper bound"); // terminal reporting/debugging
+        }
+        // X axis panning Left
+        if(xCurrentLowerBound > originalXAxisLowerBound){
+            if (xDirection == XDirection.LEFT){
+                xAxis.setLowerBound(xCurrentLowerBound - xPanStep);
+                xAxis.setUpperBound(xCurrentUpperBound - xPanStep);
+            }
+        }
+        else {
+//        System.out.println("reached X Lower bound"); // terminal reporting/debugging
+        }
+
+        // Y axis panning down
+        if(yCurrentUpperBound < originalYAxisUpperBound){
+            if (yDirection == YDirection.DOWN){
+                yAxis.setLowerBound(yCurrentLowerBound + yPanStep);
+                yAxis.setUpperBound(yCurrentUpperBound + yPanStep);
+            }
+        }
+        else{
+//        System.out.println("reached Y upper bound"); // terminal reporting/debugging
+        }
+        // Y axis panning up
+        if(yCurrentLowerBound > originalYAxisLowerBound){
+            if (yDirection == YDirection.UP){
+                yAxis.setLowerBound(yCurrentLowerBound - yPanStep);
+                yAxis.setUpperBound(yCurrentUpperBound - yPanStep);
+            }
+        }
+        else {
+//        System.out.println("reached Y Lower bound"); // terminal reporting/debugging
+        }
+
+    }
+
+    // used to control the speed of tooltip show, default was too slow for use as inspection and feedback.
+    // Adapted from code found here: https://stackoverflow.com/questions/26854301/how-to-control-the-javafx-tooltips-delay
+    // note: Java 9 simplifies this considerably.
+    public static void hackTooltipStartTiming(Tooltip tooltip) {
+        try {
+            Field fieldBehavior = tooltip.getClass().getDeclaredField("BEHAVIOR");
+            fieldBehavior.setAccessible(true);
+            Object objBehavior = fieldBehavior.get(tooltip);
+
+            Field fieldTimer = objBehavior.getClass().getDeclaredField("activationTimer");
+            fieldTimer.setAccessible(true);
+            Timeline objTimer = (Timeline) fieldTimer.get(objBehavior);
+
+            objTimer.getKeyFrames().clear();
+            objTimer.getKeyFrames().add(new KeyFrame(new Duration(100)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

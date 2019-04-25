@@ -14,7 +14,7 @@ import org.avmframework.objective.NumericObjectiveValue;
 import org.avmframework.objective.ObjectiveFunction;
 import org.avmframework.objective.ObjectiveValue;
 import org.avmframework.variable.FixedPointVariable;
-import org.avmframework.visualiser.start;
+import org.avmframework.visualiser.Launcher;
 
 public class Quadratic {
 
@@ -81,6 +81,6 @@ public class Quadratic {
                         " (unique: " + monitor.getNumUniqueEvaluations() + ")"
         );
         System.out.println("Running time: " + monitor.getRunningTime() + "ms");
-        start.launchVisualiser(Monitor.getFileName());
+        Launcher.launchVisualiser(Monitor.getFileName());
     }
 }

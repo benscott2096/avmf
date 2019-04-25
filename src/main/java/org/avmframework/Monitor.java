@@ -67,10 +67,10 @@ public class Monitor {
     protected long endTime;
 
 
-    // BSS added variables and objects
+    // variables and objects for visualiser
     public static final boolean USE_VISUALISER_DEFAULT = false;
-    private boolean useVisualiser; // default should be false ... however we end up handling that.
-    private static String fileName;
+    private boolean useVisualiser;
+    private static String fileName = "file_name";
 
     public static String getFileName(){
         return fileName;
@@ -83,6 +83,8 @@ public class Monitor {
     public void setUseVisualiser(boolean useVisualiser){
         this.useVisualiser = useVisualiser;
     }
+
+    protected AvmfRunLog runLog = new AvmfRunLog();
 
     /**
      * Constructs a Monitor instance.
@@ -167,7 +169,7 @@ public class Monitor {
     }
 
     /**
-     * Gets the running time (in milliseconds) of the search from start to finish. If the search has not terminated,
+     * Gets the running time (in milliseconds) of the search from Launcher to finish. If the search has not terminated,
      * the value is undefined.
      * @return The run time of the search.
      */
@@ -193,26 +195,22 @@ public class Monitor {
 
         tp.checkFoundOptimal(this);
 
-        // handle writing variables and objective values to file here -- BSS
     }
 
 
-    protected AvmfRunLog runLog = new AvmfRunLog();
 
 
+    // method that adds an key pair and other associated information
     public void recordKeyPair(Vector vector, ObjectiveValue objVal, int iteration) throws TerminationException {
-//        System.out.println("vector: " + vector + ", objVal: " + objVal);
-
+//        System.out.println("vector: " + vector + ", objVal: " + objVal); // debugging
         runLog.addIteration(new AvmfIterationOutput(vector, objVal, iteration, numRestarts));
-        // handle writing variables and objective values to file here -- BSS
+
     }
 
     public void observeRestart() throws TerminationException {
         tp.checkExhaustedRestarts(this);
         tp.checkExhaustedTime(this);
         numRestarts ++;
-        System.out.println("restart");
-        // handle writing restarts to file here -BSS
     }
 
     public void observeTermination() {
@@ -223,14 +221,7 @@ public class Monitor {
         runLog.getHeader().addSearchName(searchName);
         runLog.getHeader().addTerminationPolicy(tp.getTerminateOnOptimal(), tp.getMaxEvaluations(), tp.getMaxRestarts(), tp.getRunningTime());
 
-
-
-//        System.out.println("in monitor: " + runLog.getHeader().toString());
-
         try {
-
-
-
 
             // file handling
             System.out.println(generateFileName());

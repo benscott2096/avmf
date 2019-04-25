@@ -29,7 +29,7 @@ public class Calendar {
         if (end_day > monthDays(end_month, end_year))
             end_day = monthDays(end_month, end_year);
 
-        // swap dates if start date before end date
+        // swap dates if Launcher date before end date
         boolean swapDates = false;
         if (end_year < start_year) {
             swapDates = true;

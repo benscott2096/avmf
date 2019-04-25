@@ -17,68 +17,39 @@ public class AvmfIterationOutput {
 
     private int restartNo = 0;
 
-
-
-
-
-
-
     public ArrayList<Double> getVector(){
         return vector;
     }
 
-//    public void setVector(Vector vector){
-//     this.vector = vector.deepCopy();
-//    }
 
+    // getters
     public Double getObjVal(){
         return objectiveValue;
     }
-//
-//    public void setObjVal(double objectiveValue){
-//        this.objectiveValue = objectiveValue;
-//    }
 
     public int getIteration(){ return iteration;}
 
     public int getRestartNo(){ return restartNo;}
 
 
+    // constructor
     public AvmfIterationOutput(Vector vector, ObjectiveValue objectiveValue, int iteration, int restartNo){
-
-
-//        System.out.println("String processing");
-//        System.out.println(vector.getVariable(0));
-//        System.out.println(vector.getVariable(0).getClass());
-
-//        String var = vector.toString();
-//        System.out.println(var);
-//        System.out.println(var.length());
-
-//        System.out.println(var.getClass());
-
-//        for(int i = 0; i < vector.size(); i++ ) {
-//
-//
-//            this.vector.add(Double.valueOf(vector.getVariable(i).toString()));
-//        }
-
 
         if (vector.getVariable(0) instanceof StringVariable){
 
-            System.out.println("String add");
+//            System.out.println("String add"); // debugging
 
             String stringOfChars = ((StringVariable) vector.getVariable(0)).asString();
 
-            System.out.println(stringOfChars);
-            System.out.println(stringOfChars.length());
+//            System.out.println(stringOfChars);// debugging
+//            System.out.println(stringOfChars.length()); // debuggging
             for(int i = 0; i < stringOfChars.length(); i++ ){
                 this.vector.add((double) stringOfChars.charAt(i));
             }
 
         }
         else{
-            System.out.println("normal add");
+//            System.out.println("normal add"); // debugging
             for(int i = 0; i < vector.size(); i++ ) {
 //                this.vector.add((double) i);
                 this.vector.add(Double.valueOf(vector.getVariable(i).toString()));
@@ -86,11 +57,8 @@ public class AvmfIterationOutput {
             }
         }
 
-
         this.objectiveValue = Double.valueOf(objectiveValue.toString());
-
         this.iteration = iteration;
-
         this.restartNo = restartNo;
     }
 
