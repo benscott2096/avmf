@@ -97,8 +97,7 @@ public class GUI extends Application {
         // initialise filename from monitor
         String fileName = Monitor.getFileName();
 
-        // make linechart from data
-        final LineChart<Number,Number> lineChart = makeLineChart(Launcher.getDataPairs());
+
 
         // if the launcher configuration hasn't got a file loaded, load one here thorough a JavaFX file chooser GUI
         if (!Launcher.fileLoaded){
@@ -117,6 +116,9 @@ public class GUI extends Application {
                 System.out.println("Error loading JSON AMVf runlog file");
             }
         }
+
+        // make linechart from data
+        final LineChart<Number,Number> lineChart = makeLineChart(Launcher.getDataPairs());
 
         // record number of variables in vector
         noOfVariables = Launcher.getDataPairs().get(0).getVector().size();
