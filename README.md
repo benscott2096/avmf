@@ -2,7 +2,7 @@
 
 This fork was made to develop my computer science dissertation project at the University of Sheffield in 2018-19. "Animating Search-Based Optimisation Algorithms in the AVMf" was supervised by Phil McMinn Professor of Software Engineering, one of the original authors of the AVMFramework. This repositiory is and will remain in the state is was at the time the dissertation project completion. The final report is included here as documentation of the development, design architecture and usage of the visualiser bulit for the AVMf in this repositiory. If you are intrested in what has been developed here please contact me or [Phil McMinn](http://philmcminn.staff.shef.ac.uk).
 
-The rest of this Readme is as it was at the time of forking.
+The rest of this Readme is as it was in the original repository at the time of forking.
 
 
 # Welcome to the AVMFramework (AVM<i>f</i>)
